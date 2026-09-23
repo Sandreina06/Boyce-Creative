@@ -86,8 +86,8 @@ Client slugs: `edwards-roofing`, `beechwood-golf`, `robertson-equipment`, `tws-h
    `DATABASE_URL = ${{Postgres.DATABASE_URL}}`.
 3. App service variables: `DATA_SOURCE=windsor`, `WINDSOR_API_KEY=…` (from onboard.windsor.ai),
    `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD`.
-4. Deploy. `railway.json` runs migrations before each deploy (`node scripts/migrate.mjs`).
-5. Once, from the service shell: `npm run db:seed` (creates the 4 clients and the admin user).
+4. Deploy. `railway.json` runs `npm run db:setup` before each deploy: migrations, then the
+   idempotent seed (the 4 clients and the admin user from `ADMIN_*`). No manual step needed.
 
 ## Windsor field notes
 

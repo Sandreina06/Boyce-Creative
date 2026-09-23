@@ -4,7 +4,9 @@
     "buildCommand": "npm run build"
   },
   "deploy": {
-    "preDeployCommand": ["node scripts/migrate.mjs"],
+    "preDeployCommand": [
+      "npm run db:setup"
+    ],
     "startCommand": "npm start",
     "healthcheckPath": "/login",
     "restartPolicyType": "ON_FAILURE"
