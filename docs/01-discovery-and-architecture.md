@@ -176,6 +176,26 @@ This is directly useful for question 5 ("What was changed recently?"):
 - the Meta activity log is shown alongside it as **"Detected in Meta"**
   events, with a one-click "Document this change" that pre-fills a manual entry.
 
+### 2.12a Confirmed Boyce portfolio (business 835130686676855)
+
+The Boyce Creative Co. business portfolio contains 5 ad accounts (confirmed by
+the user, 2026-09-23). Seed mapping, one client per account:
+
+| Client | Meta account id | In Windsor? |
+|---|---|---|
+| Edwards Roofing | `1048672036926458` | ✅ |
+| Beechwood Golf | `798492569058129` | ✅ |
+| Lane Angus | `1496773465190264` | ❌ **not connected** — `get_data` returns "Account … is not available" |
+| Robertson Equipment | `2151028662414054` | ✅ |
+| TW's Hardware | `842145677176337` | ✅ |
+
+Excluded (connected in Windsor but **not** in the Boyce portfolio — must never
+be seeded or queried): `462883958825975` Luna-Main-Ads,
+`514719903399419` Jo Martin Merchant Solutions.
+
+Lane Angus will be seeded with its mapping and show a "Not connected in
+Windsor" state until access is granted in Windsor.
+
 ### 2.12 Not available / limitations
 
 - No per-account `business_id` field.
@@ -363,9 +383,7 @@ typecheck, lint, and unit tests for the analytics maths.
    local/demo?
 2. **Auth** — Google Workspace SSO restricted to the Boyce domain
    (recommended; which domain?) or email magic links?
-3. **Client → account mapping seed** — which of the 6 accounts belong to which
-   client? (Luna-Main-Ads looks like it may be a separate business.) I'll seed
-   one client per account unless told otherwise.
+3. ~~Client → account mapping seed~~ — **confirmed** (see §2.12a).
 4. **Drizzle** vs Prisma — recommending Drizzle.
 
 ## 10. Risks
