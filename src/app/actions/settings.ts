@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { canAccessClient } from "@/server/auth/access";
-import { requireUser, type SessionUser } from "@/server/auth/session";
+import { requireSignedInUser, type SessionUser } from "@/server/auth/session";
 import { db, schema } from "@/server/db";
 import { KPI_OPTIONS } from "@/server/analytics/metrics";
 import { isAttributionWindow, isConversionField, isValueField } from "@/server/windsor/fields";
@@ -12,7 +12,7 @@ import { isAttributionWindow, isConversionField, isValueField } from "@/server/w
 export type ActionState = { ok?: string; error?: string };
 
 async function authorize(clientId: string, opts: { admin?: boolean } = {}): Promise<SessionUser> {
-  const user = await requireUser();
+  const user = await requireSignedInUser();
   if (!(await canAccessClient(user, clientId))) throw new Error("Not authorised");
   if (user.role === "viewer") throw new Error("Viewers cannot change settings");
   if (opts.admin && user.role !== "admin") throw new Error("Only admins can change account mappings");

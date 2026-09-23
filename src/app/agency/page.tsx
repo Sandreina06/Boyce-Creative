@@ -55,6 +55,7 @@ export default async function AgencyPage(props: PageProps<"/agency">) {
             fromCache={overview.meta.fromCache}
             stale={overview.meta.stale}
             clientId={null}
+            canRefresh={!user.isGuest}
           />
         </div>
 

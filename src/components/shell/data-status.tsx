@@ -13,10 +13,11 @@ type Props = {
   fromCache: boolean;
   stale: boolean;
   clientId: string | null;
+  canRefresh: boolean;
 };
 
 /** "Last updated X min ago" — never claims real-time. */
-export function DataStatus({ source, fetchedAt, stale, clientId }: Props) {
+export function DataStatus({ source, fetchedAt, stale, clientId, canRefresh }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
@@ -30,6 +31,7 @@ export function DataStatus({ source, fetchedAt, stale, clientId }: Props) {
         Last updated {formatRelativeTime(fetchedAt)}
       </span>
       {stale && <Badge variant="warning">Windsor unavailable — showing last saved data</Badge>}
+      {canRefresh && (
       <button
         type="button"
         onClick={() =>
@@ -44,6 +46,7 @@ export function DataStatus({ source, fetchedAt, stale, clientId }: Props) {
         <RefreshCw className={pending ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
         {pending ? "Refreshing" : "Refresh"}
       </button>
+      )}
     </div>
   );
 }

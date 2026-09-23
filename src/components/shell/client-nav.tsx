@@ -16,12 +16,12 @@ const SECTIONS = [
   ["settings", "Settings"],
 ] as const;
 
-export function ClientNav({ clientId }: { clientId: string }) {
+export function ClientNav({ clientId, showSettings }: { clientId: string; showSettings: boolean }) {
   const pathname = usePathname();
   const qs = useSearchParams().toString();
   return (
     <nav className="-mb-px flex gap-1 overflow-x-auto">
-      {SECTIONS.map(([slug, label]) => {
+      {SECTIONS.filter(([slug]) => showSettings || slug !== "settings").map(([slug, label]) => {
         const href = `/clients/${clientId}/${slug}`;
         const active = pathname.startsWith(href);
         return (

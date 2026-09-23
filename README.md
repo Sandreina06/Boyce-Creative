@@ -62,10 +62,16 @@ Set `DATA_SOURCE=windsor` and `WINDSOR_API_KEY` for real Meta data.
 
 Checks: `npm run typecheck`, `npm run lint`, `npm test`.
 
-### Users
+### Sharing and users
 
-Sign-in is email + password (no Google Workspace). Admins see every client; managers and viewers
-see only the clients they are granted.
+**Public read-only reporting is on by default.** Anyone with the link can view every client
+dashboard without signing in. Visitors cannot change anything: settings, budgets, targets,
+account mappings, the Team page and the Refresh button all require a signed-in user.
+To require a login for viewing too, set `PUBLIC_DASHBOARD=false` in Railway.
+
+Signing in uses email + password (no Google Workspace). Admins manage people at **/team**
+(the "Share / Team" link in the header). Admins see every client; managers and viewers see only
+the clients they are granted.
 
 ```bash
 npm run user:create -- --email alex@example.com --name "Alex" --password '…' --role manager --clients edwards-roofing,tws-hardware

@@ -14,6 +14,24 @@ export type SessionUser = {
   email: string;
   name: string;
   role: "admin" | "manager" | "viewer";
+  /** Anonymous read-only visitor (public reporting mode). */
+  isGuest?: boolean;
+};
+
+/**
+ * Public read-only reporting (owner's decision, 2026-09-23): anyone with the
+ * link can VIEW dashboards without signing in. Every mutation still requires a
+ * signed-in user via requireSignedInUser(). Set PUBLIC_DASHBOARD=false to
+ * require a login for viewing as well.
+ */
+export const isPublicDashboard = () => process.env.PUBLIC_DASHBOARD !== "false";
+
+export const GUEST_USER: SessionUser = {
+  id: "public-guest",
+  email: "",
+  name: "Guest",
+  role: "viewer",
+  isGuest: true,
 };
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -59,7 +77,16 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   return { id: row.id, email: row.email, name: row.name, role: row.role };
 });
 
+/** For viewing: the signed-in user, or the read-only guest in public mode. */
 export async function requireUser(): Promise<SessionUser> {
+  const user = await getCurrentUser();
+  if (user) return user;
+  if (isPublicDashboard()) return GUEST_USER;
+  redirect("/login");
+}
+
+/** For any change to data: a real signed-in user, never the guest. */
+export async function requireSignedInUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   return user;

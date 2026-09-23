@@ -24,10 +24,23 @@ export async function AppHeader({ user, currentClientId }: { user: SessionUser; 
         <ClientSwitcher clients={clients} currentId={currentClientId} />
         <DateControls />
         <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
-          <span>{user.name}</span>
-          <form action={logout}>
-            <button className="rounded px-1.5 py-1 hover:bg-muted hover:text-foreground">Sign out</button>
-          </form>
+          {user.role === "admin" && (
+            <Link prefetch={false} href="/team" className="rounded px-1.5 py-1 font-medium text-primary hover:bg-muted">
+              Share / Team
+            </Link>
+          )}
+          {user.isGuest ? (
+            <Link prefetch={false} href="/login" className="rounded px-1.5 py-1 hover:bg-muted hover:text-foreground">
+              Admin sign in
+            </Link>
+          ) : (
+            <>
+              <span>{user.name}</span>
+              <form action={logout}>
+                <button className="rounded px-1.5 py-1 hover:bg-muted hover:text-foreground">Sign out</button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </header>

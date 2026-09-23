@@ -79,6 +79,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
           fromCache={meta.fromCache}
           stale={meta.stale}
           clientId={ctx.client.id}
+          canRefresh={!ctx.user.isGuest}
         />
       </div>
 

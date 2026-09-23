@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { z } from "zod";
 import { db, schema } from "../db";
-import { requireUser, type SessionUser } from "./session";
+import { requireSignedInUser, requireUser, type SessionUser } from "./session";
 
 /**
  * Client isolation lives here.
@@ -33,7 +33,8 @@ export const listAccessibleClients = cache(async (user: SessionUser) => {
   const base = db()
     .select({ id: schema.clients.id, name: schema.clients.name, slug: schema.clients.slug })
     .from(schema.clients);
-  if (user.role === "admin") {
+  // Admins and public read-only guests see every active client.
+  if (user.role === "admin" || user.isGuest) {
     return base.where(eq(schema.clients.isActive, true)).orderBy(asc(schema.clients.name));
   }
   return base
@@ -89,7 +90,7 @@ export async function loadClientContext(user: SessionUser, clientId: string): Pr
 }
 
 export async function requireAdmin(): Promise<SessionUser> {
-  const user = await requireUser();
+  const user = await requireSignedInUser();
   if (user.role !== "admin") notFound();
   return user;
 }

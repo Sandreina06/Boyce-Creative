@@ -3,7 +3,7 @@
 import { sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { canAccessClient, listAccessibleClients, loadClientContext } from "@/server/auth/access";
-import { requireUser } from "@/server/auth/session";
+import { requireSignedInUser } from "@/server/auth/session";
 import { db, schema } from "@/server/db";
 
 /**
@@ -12,7 +12,8 @@ import { db, schema } from "@/server/db";
  * here; the browser only ever sends a client id.
  */
 export async function refreshData(clientId: string | null): Promise<void> {
-  const user = await requireUser();
+  // Forcing a Windsor re-query costs API quota, so anonymous visitors cannot do it.
+  const user = await requireSignedInUser();
   let clientIds: string[];
   if (clientId) {
     if (!(await canAccessClient(user, clientId))) return;

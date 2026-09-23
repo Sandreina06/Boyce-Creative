@@ -19,7 +19,7 @@ export default async function ClientLayout(props: LayoutProps<"/clients/[clientI
             </span>
           </div>
           <div className="mt-2">
-            <ClientNav clientId={ctx.client.id} />
+            <ClientNav clientId={ctx.client.id} showSettings={!ctx.user.isGuest} />
           </div>
         </div>
       </div>

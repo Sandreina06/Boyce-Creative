@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 import { deleteTarget, setMappingActive } from "@/app/actions/settings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import { BudgetForm, MappingForm, SettingsForm, TargetForm } from "./forms";
 export default async function SettingsPage(props: PageProps<"/clients/[clientId]/settings">) {
   const { clientId } = await props.params;
   const ctx = await requireClientAccess(clientId);
+  if (ctx.user.isGuest) redirect("/login");
   const canEdit = ctx.user.role !== "viewer";
   const isAdmin = ctx.user.role === "admin";
 
