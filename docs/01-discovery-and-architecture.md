@@ -1,6 +1,6 @@
 # Boyce Meta Intelligence — Discovery & Architecture Proposal
 
-Status: **Proposal — awaiting approval before Phase 1 build**
+Status: **Phase 1 built** (decisions recorded in §9)
 Date: 2026-09-23
 Scope: Meta Ads only, read-only, data via Windsor.ai.
 
@@ -375,15 +375,24 @@ typecheck, lint, and unit tests for the analytics maths.
 
 ---
 
-## 9. Decisions needed from you
+## 9. Decisions (resolved 2026-09-23)
 
-1. **Windsor runtime credential** — OK to use a `WINDSOR_API_KEY` env var on
-   Railway, connecting to Windsor's hosted MCP (recommended), with fixtures for
-   local/demo?
-2. **Auth** — Google Workspace SSO restricted to the Boyce domain
-   (recommended; which domain?) or email magic links?
-3. ~~Client → account mapping seed~~ — **confirmed** (see §2.12a).
-4. **Drizzle** vs Prisma — recommending Drizzle.
+1. **Windsor runtime credential**: the deployed app uses a Windsor API key (`WINDSOR_API_KEY`)
+   against `https://mcp.windsor.ai/` (`Authorization: Bearer`). It reuses the existing
+   Windsor ↔ Meta connection, and no Meta token is involved. Local development uses the DEMO
+   DATA generator.
+2. **Auth**: there is no Google Workspace for Boyce, so sign-in is **email + password** with
+   bcrypt hashes and DB-backed sessions. Users are created with `npm run user:create`. No email
+   provider is needed.
+3. **Clients**: Edwards Roofing, Beechwood Golf, Robertson Equipment and TW's Hardware. Lane Angus
+   is out of scope.
+4. **ORM**: Drizzle.
+5. **UI kit**: shadcn-style primitives are written in-repo (the shadcn registry was unreachable
+   from the build environment). They follow the same `cva` + `cn` conventions.
+6. **Charts**: Spend, Results and Cost per result are shown as aligned small multiples instead
+   of a dual-axis chart.
+7. **Click metrics**: CTR, CPC and CVR use **link clicks**, so that
+   CPR = (CPM/1000) / (CTR × CVR) holds exactly.
 
 ## 10. Risks
 

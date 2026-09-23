@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Boyce Meta Intelligence — light, professional, data-dense. */
+:root {
+  --background: #f7f8fa;
+  --foreground: #101828;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --muted: #f2f4f7;
+  --muted-foreground: #667085;
+  --border: #e4e7ec;
+  --ring: #2e5bff66;
+  --primary: #2e5bff;
+  --primary-foreground: #ffffff;
+  --good: #067647;
+  --critical: #d92d20;
+  --warning: #dc6803;
+  --warning-foreground: #93370d;
+  --chart-1: #2e5bff;
+  --chart-2: #12b76a;
+  --chart-3: #f79009;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-good: var(--good);
+  --color-critical: var(--critical);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 0;
+}
