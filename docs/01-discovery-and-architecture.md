@@ -178,14 +178,13 @@ This is directly useful for question 5 ("What was changed recently?"):
 
 ### 2.12a Confirmed Boyce portfolio (business 835130686676855)
 
-The Boyce Creative Co. business portfolio contains 5 ad accounts (confirmed by
-the user, 2026-09-23). Seed mapping, one client per account:
+The Boyce Creative Co. business portfolio contains 5 ad accounts; **4 are in scope**
+(confirmed by the user, 2026-09-23). Seed mapping, one client per account:
 
 | Client | Meta account id | In Windsor? |
 |---|---|---|
 | Edwards Roofing | `1048672036926458` | ✅ |
 | Beechwood Golf | `798492569058129` | ✅ |
-| Lane Angus | `1496773465190264` | ❌ **not connected** — `get_data` returns "Account … is not available" |
 | Robertson Equipment | `2151028662414054` | ✅ |
 | TW's Hardware | `842145677176337` | ✅ |
 
@@ -193,8 +192,8 @@ Excluded (connected in Windsor but **not** in the Boyce portfolio — must never
 be seeded or queried): `462883958825975` Luna-Main-Ads,
 `514719903399419` Jo Martin Merchant Solutions.
 
-Lane Angus will be seeded with its mapping and show a "Not connected in
-Windsor" state until access is granted in Windsor.
+Lane Angus (`1496773465190264`) is in the portfolio but **out of scope** per
+the user — not seeded, not queried (it is also not connected in Windsor).
 
 ### 2.12 Not available / limitations
 
