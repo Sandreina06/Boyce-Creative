@@ -1,11 +1,11 @@
-import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Info, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import type { Alert } from "@/server/analytics/attention";
 import { cn } from "@/lib/utils";
 
-const ICON = { critical: AlertOctagon, warning: AlertTriangle, info: Info } as const;
-const TONE = { critical: "text-critical", warning: "text-warning", info: "text-primary" } as const;
-const LABEL = { critical: "Critical", warning: "Warning", info: "Info" } as const;
+const ICON = { critical: AlertOctagon, warning: AlertTriangle, opportunity: Lightbulb, info: Info } as const;
+const TONE = { critical: "text-critical", warning: "text-warning", opportunity: "text-good", info: "text-primary" } as const;
+const LABEL = { critical: "Critical", warning: "Warning", opportunity: "Opportunity", info: "Info" } as const;
 
 export function AttentionList({
   items,
@@ -31,6 +31,7 @@ export function AttentionList({
                 <span className={cn(!clientName && "font-medium")}>{alert.title}</span>
               </div>
               <div className="text-xs text-muted-foreground">{alert.detail}</div>
+              {alert.recommendation && <div className="mt-0.5 text-xs">→ {alert.recommendation}</div>}
             </div>
           </div>
         );

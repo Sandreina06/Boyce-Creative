@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { formatMetric, formatRelativeTime } from "@/lib/format";
 import { requireClientAccess } from "@/server/auth/access";
-import { evaluateAttention } from "@/server/analytics/attention";
+import { evaluateAttention, mergeAlerts } from "@/server/analytics/attention";
 import { COMPARE_MODES, formatRange, resolveDatesFromParams } from "@/server/analytics/date-ranges";
 import { kpiToMetric } from "@/server/analytics/metrics";
 import {
@@ -60,7 +60,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
   const currency = ctx.settings.currency;
   const compareLabel = COMPARE_MODES.find((m) => m.id === dates.compare)?.label.toLowerCase() ?? null;
   const primaryKey = kpiToMetric(ctx.settings.primaryKpi);
-  const alerts = evaluateAttention({
+  const basicAlerts = evaluateAttention({
     primaryKpi: primaryKey,
     primaryKpiLabel: metricLabel(ctx, primaryKey),
     resultLabel: ctx.settings.primaryConversionLabel,
@@ -71,6 +71,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
     comparisonLabel: compareLabel ?? "previous period",
     formatValue: (k, v) => formatMetric(k, v, currency),
   });
+  const alerts = mergeAlerts(basicAlerts, intel?.issues ?? []);
   const meta = mergeMeta([overview.meta, ...(pacing ? [pacing.meta] : []), ...(intel ? [intel.meta] : [])]);
 
   return (

@@ -3,13 +3,14 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { listAccessibleClients, loadClientContext, type ClientContext } from "../auth/access";
 import type { SessionUser } from "../auth/session";
 import { db, schema } from "../db";
-import { evaluateAttention, type Alert } from "../analytics/attention";
+import { evaluateAttention, mergeAlerts, type Alert } from "../analytics/attention";
 import { compareValues, type Comparison } from "../analytics/compare";
 import { COMPARE_MODES, resolveDatesFromParams, type ResolvedDates } from "../analytics/date-ranges";
 import { derive, kpiToMetric, sumBase, type Derived, type MetricKey } from "../analytics/metrics";
 import { formatMetric } from "@/lib/format";
 import { mergeMeta, toBase, type DataMeta } from "../windsor/service";
 import { syncMetaChanges } from "./changelog";
+import { getClientIntelligence } from "./intelligence";
 import { fetchGrain, getAgencySettings, getClientPacing, metricLabel, type ClientPacing } from "./client-data";
 
 export type AgencyClientRow = {
@@ -109,14 +110,17 @@ export async function getAgencyOverview(
     }),
   );
 
+  // Top issues per client (already sorted by severity); the full list is on each client's Insights page.
+  const PER_CLIENT = 4;
   const attention = rows
-    .flatMap((r) => r.alerts.map((alert) => ({ clientId: r.clientId, clientName: r.name, alert })))
+    .flatMap((r) => r.alerts.slice(0, PER_CLIENT).map((alert) => ({ clientId: r.clientId, clientName: r.name, alert })))
     .sort((a, b) => sevRank(a.alert.severity) - sevRank(b.alert.severity));
 
   return { rows, attention, meta: mergeMeta(rows.flatMap((r) => (r.meta ? [r.meta] : []))) };
 }
 
-const sevRank = (s: Alert["severity"]) => ({ critical: 0, warning: 1, info: 2 })[s];
+const SEV: Record<Alert["severity"], number> = { critical: 0, warning: 1, opportunity: 2, info: 3 };
+const sevRank = (s: Alert["severity"]) => SEV[s];
 
 async function clientSummary(
   ctx: ClientContext,
@@ -138,7 +142,7 @@ async function clientSummary(
   const comparisonLabel =
     COMPARE_MODES.find((m) => m.id === dates.compare)?.label.toLowerCase() ?? "previous period";
 
-  const alerts = evaluateAttention({
+  const basic = evaluateAttention({
     primaryKpi: primaryKey,
     primaryKpiLabel: metricLabel(ctx, primaryKey),
     resultLabel: ctx.settings.primaryConversionLabel,
@@ -149,6 +153,13 @@ async function clientSummary(
     comparisonLabel,
     formatValue: (k, v) => formatMetric(k, v, ctx.settings.currency),
   });
+
+  // Full account-health + strategy analysis (same as the client's Insights page).
+  const intel = await getClientIntelligence(ctx, dates).catch((err) => {
+    console.error(`[agency] intelligence for ${ctx.client.name}:`, (err as Error).message);
+    return null;
+  });
+  const alerts = mergeAlerts(basic, intel?.issues ?? []);
 
   return {
     current,
@@ -161,7 +172,7 @@ async function clientSummary(
     pacing,
     activeCampaigns: campaigns.rows.filter((r) => r.campaignStatus === "ACTIVE" && r.spend > 0).length,
     alerts,
-    meta: mergeMeta([cur.meta, campaigns.meta, pacing.meta, ...(prev ? [prev.meta] : [])]),
+    meta: mergeMeta([cur.meta, campaigns.meta, pacing.meta, ...(prev ? [prev.meta] : []), ...(intel ? [intel.meta] : [])]),
   };
 }
 

@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { NativeSelect } from "@/components/ui/input";
+import { startNavigationFeedback } from "./navigation-progress";
 
 export const LAST_CLIENT_COOKIE = "bmi_last_client";
 
@@ -17,6 +18,7 @@ export function ClientSwitcher({ clients, currentId }: { clients: { id: string; 
   }, [currentId]);
 
   function go(id: string) {
+    startNavigationFeedback();
     const qs = params.toString();
     if (!id) return router.push(`/agency${qs ? `?${qs}` : ""}`);
     // Keep the same section (overview, campaigns, …) when switching clients.

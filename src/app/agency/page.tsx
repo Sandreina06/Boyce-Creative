@@ -23,6 +23,8 @@ export default async function AgencyPage(props: PageProps<"/agency">) {
     Object.entries(params).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])),
   ).toString();
   const href = (id: string) => `/clients/${id}/overview${qs ? `?${qs}` : ""}`;
+  const insightsHref = (id: string) => `/clients/${id}/insights${qs ? `?${qs}` : ""}`;
+  const hidden = overview.rows.reduce((n, r) => n + Math.max(0, r.alerts.length - 4), 0);
   const lastClient = (await cookies()).get(LAST_CLIENT_COOKIE)?.value;
   const lastClientRow = overview.rows.find((r) => r.clientId === lastClient);
 
@@ -63,17 +65,33 @@ export default async function AgencyPage(props: PageProps<"/agency">) {
           <CardHeader>
             <div>
               <CardTitle>Needs attention</CardTitle>
-              <CardDescription>Deterministic checks on each client&apos;s primary KPI, CTR and budget pacing.</CardDescription>
+              <CardDescription>
+                Issues and opportunities across all clients: KPI changes and their drivers, learning status, creative fatigue, copy testing,
+                landing pages, tracking gaps and budget pacing. Click an item for the full evidence.
+              </CardDescription>
             </div>
-            <Badge variant={overview.attention.some((a) => a.alert.severity === "critical") ? "critical" : "default"}>
-              {overview.attention.length} alerts
-            </Badge>
+            <div className="flex gap-1.5">
+              {(["critical", "warning", "opportunity"] as const).map((sev) => {
+                const n = overview.attention.filter((a) => a.alert.severity === sev).length;
+                return n ? (
+                  <Badge key={sev} variant={sev === "critical" ? "critical" : sev === "warning" ? "warning" : "good"}>
+                    {n} {sev === "opportunity" ? (n > 1 ? "opportunities" : "opportunity") : sev}
+                  </Badge>
+                ) : null;
+              })}
+              {!overview.attention.length && <Badge>0 alerts</Badge>}
+            </div>
           </CardHeader>
           <CardContent className="pt-2">
             <AttentionList
               items={overview.attention.map((a, i) => ({ key: `${a.clientId}-${i}`, ...a }))}
-              hrefFor={href}
+              hrefFor={insightsHref}
             />
+            {hidden > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Showing the top 4 per client ({hidden} more). Open a client&apos;s Insights page for the full list.
+              </p>
+            )}
           </CardContent>
         </Card>
 

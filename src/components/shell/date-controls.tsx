@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { Input, NativeSelect } from "@/components/ui/input";
+import { startNavigationFeedback } from "./navigation-progress";
 import { COMPARE_MODES, DATE_PRESETS, DEFAULT_COMPARE, DEFAULT_PRESET } from "@/server/analytics/date-ranges";
 
 export function DateControls() {
@@ -20,6 +21,7 @@ export function DateControls() {
       if (v == null || v === "") sp.delete(k);
       else sp.set(k, v);
     }
+    startNavigationFeedback();
     start(() => router.push(`${pathname}?${sp.toString()}`));
   }
 
@@ -66,7 +68,11 @@ export function DateControls() {
           ))}
         </NativeSelect>
       </label>
-      {pending && <span className="text-xs text-muted-foreground">Loading…</span>}
+      {pending && (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" /> Updating…
+        </span>
+      )}
     </div>
   );
 }

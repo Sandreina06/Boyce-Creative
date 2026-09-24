@@ -8,13 +8,15 @@ import { PACING_LABEL, type Pacing } from "./pacing";
  * Pure functions: numbers in, alerts out. No LLM involved.
  */
 
-export type AlertSeverity = "critical" | "warning" | "info";
+export type AlertSeverity = "critical" | "warning" | "opportunity" | "info";
 
 export type Alert = {
   ruleId: string;
   severity: AlertSeverity;
   title: string;
   detail: string;
+  /** Suggested next step (from account health / strategy rules). */
+  recommendation?: string;
 };
 
 export type AttentionInput = {
@@ -98,6 +100,29 @@ export function evaluateAttention(i: AttentionInput): Alert[] {
     });
   }
 
-  const order: Record<AlertSeverity, number> = { critical: 0, warning: 1, info: 2 };
+  const order: Record<AlertSeverity, number> = { critical: 0, warning: 1, opportunity: 2, info: 3 };
   return alerts.sort((a, b) => order[a.severity] - order[b.severity]);
+}
+
+/** Issue shape from account health / strategy (kept structural to avoid a circular import). */
+type IssueLike = { id: string; severity: AlertSeverity; title: string; evidence: string[]; recommendation: string };
+
+/**
+ * Combine the basic checks with the full account-health + strategy issues.
+ * Info-level issues are left for the Insights page; duplicates are removed.
+ */
+export function mergeAlerts(basic: Alert[], issues: IssueLike[]): Alert[] {
+  const deep: Alert[] = issues
+    .filter((i) => i.severity !== "info")
+    .map((i) => ({ ruleId: i.id, severity: i.severity, title: i.title, detail: i.evidence.slice(0, 2).join(" · "), recommendation: i.recommendation }));
+  const has = (id: string) => deep.some((d) => d.ruleId === id);
+  const order: Record<AlertSeverity, number> = { critical: 0, warning: 1, opportunity: 2, info: 3 };
+  return [
+    ...deep,
+    ...basic.filter(
+      (b) =>
+        !(b.ruleId === "primary_kpi_deterioration" && (has("kpi_deterioration") || has("roas_decline"))) &&
+        !(b.ruleId === "budget_pacing" && has("pacing")),
+    ),
+  ].sort((a, b) => order[a.severity] - order[b.severity]);
 }

@@ -11,7 +11,9 @@ import {
 
 /** Max Windsor requests in flight at once (per server process). Trial/plan limits are low. */
 const MAX_CONCURRENCY = Math.max(1, Number(process.env.WINDSOR_MAX_CONCURRENCY ?? 3));
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 2;
+/** Hard limit per Windsor call so a page never waits indefinitely. */
+const CALL_TIMEOUT_MS = Number(process.env.WINDSOR_TIMEOUT_MS ?? 45_000);
 
 let active = 0;
 const waiting: (() => void)[] = [];
@@ -71,7 +73,7 @@ export class McpWindsorTransport implements WindsorTransport {
     const client = await this.connect();
     let result;
     try {
-      result = await client.callTool({ name: tool, arguments: args }, undefined, { timeout: 120_000 });
+      result = await client.callTool({ name: tool, arguments: args }, undefined, { timeout: CALL_TIMEOUT_MS });
     } catch (err) {
       this.clientPromise = undefined; // session may have expired; reconnect next time
       throw new WindsorError(`Windsor MCP call failed: ${(err as Error).message}`, err);

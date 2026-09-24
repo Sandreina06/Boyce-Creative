@@ -48,3 +48,16 @@ body {
   font-family: var(--font-sans);
   font-feature-settings: "tnum" 0;
 }
+
+@keyframes bmi-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Every clickable thing gives immediate tactile feedback. */
+a, button, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+a:active, button:active {
+  opacity: 0.7;
+}

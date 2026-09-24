@@ -12,6 +12,9 @@ export class DemoWindsorTransport implements WindsorTransport {
   readonly source = "demo" as const;
 
   async getData(req: GetDataRequest): Promise<WindsorRow[]> {
+    // Local testing only: simulate Windsor latency to exercise loading states.
+    const latency = Number(process.env.DEMO_LATENCY_MS ?? 0);
+    if (latency > 0) await new Promise((r) => setTimeout(r, latency));
     if (req.fields.includes("activity_event_type")) return demoActivity(req);
     const dims = req.fields.filter((f) => DIMENSION_FIELDS.has(f));
     const dates = eachDate(req.dateFrom, req.dateTo);

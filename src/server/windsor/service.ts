@@ -89,7 +89,15 @@ export type DataMeta = {
   fetchedAt: Date;
   fromCache: boolean;
   stale: boolean;
+  /** True when the query covers recent days (still changing). Historical data doesn't age. */
+  recent?: boolean;
 };
+
+/** A range ending within the last 2 days is still being updated by Meta. */
+function isRecent(range: DateRange): boolean {
+  const cutoff = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+  return range.to >= cutoff;
+}
 
 export type PerfResult = { rows: PerfRow[]; meta: DataMeta };
 
@@ -197,7 +205,7 @@ export async function getPerformance(q: PerfQuery): Promise<PerfResult> {
       creative: !!q.includeCreative && q.grain === "ad",
       delivery: !!q.includeDelivery && q.grain === "adset",
     }),
-    meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale },
+    meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale, recent: isRecent(q.range) },
   };
 }
 
@@ -221,7 +229,7 @@ export async function getAccountActivity(
     },
     opts,
   );
-  return { rows: res.rows, meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale } };
+  return { rows: res.rows, meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale, recent: true } };
 }
 
 /** Convenience wrappers matching the brief's service vocabulary. */
@@ -324,10 +332,14 @@ export function toBase(row: PerfRow, conversionField: string, valueField: string
 
 export function mergeMeta(metas: DataMeta[]): DataMeta {
   if (!metas.length) return { source: dataSource(), fetchedAt: new Date(), fromCache: false, stale: false };
+  // "Last updated" = the oldest fetch among queries whose data is still changing.
+  // Comparison periods (fully in the past) don't change, so their fetch time is irrelevant.
+  const live = metas.filter((m) => m.recent !== false);
+  const basis = live.length ? live : metas;
   return {
     source: metas[0].source,
-    // The oldest fetch time is the honest "last updated" for a page.
-    fetchedAt: new Date(Math.min(...metas.map((m) => m.fetchedAt.getTime()))),
+    fetchedAt: new Date(Math.min(...basis.map((m) => m.fetchedAt.getTime()))),
+    recent: live.length > 0,
     fromCache: metas.some((m) => m.fromCache),
     stale: metas.some((m) => m.stale),
   };

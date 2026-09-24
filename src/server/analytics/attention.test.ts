@@ -25,3 +25,24 @@ describe("evaluateAttention", () => {
     expect(alerts.map((a) => a.ruleId)).toEqual(["spend_no_results"]);
   });
 });
+
+describe("mergeAlerts", () => {
+  it("adds deep issues, drops info and duplicate basic checks", async () => {
+    const { mergeAlerts } = await import("./attention");
+    const merged = mergeAlerts(
+      [
+        { ruleId: "primary_kpi_deterioration", severity: "warning", title: "CPL +25%", detail: "" },
+        { ruleId: "ctr_decline", severity: "warning", title: "CTR -30%", detail: "" },
+      ],
+      [
+        { id: "kpi_deterioration", severity: "warning", title: "CPL up 25%", evidence: ["a", "b", "c"], recommendation: "r" },
+        { id: "learning_limited:1", severity: "warning", title: "Golf - Broad: Learning limited", evidence: ["x"], recommendation: "r" },
+        { id: "no_copy_test", severity: "warning", title: "Same primary text", evidence: [], recommendation: "r" },
+        { id: "learning", severity: "info", title: "still learning", evidence: [], recommendation: "r" },
+        { id: "instant_form_quality", severity: "opportunity", title: "protect lead quality", evidence: [], recommendation: "r" },
+      ],
+    );
+    expect(merged.map((a) => a.ruleId)).toEqual(["kpi_deterioration", "learning_limited:1", "no_copy_test", "ctr_decline", "instant_form_quality"]);
+    expect(merged[0].detail).toBe("a · b");
+  });
+});
