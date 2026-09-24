@@ -307,3 +307,59 @@ export async function getRecentChanges(clientId: string, limit = 5) {
     .orderBy(desc(schema.changelogEntries.changedAt))
     .limit(limit);
 }
+
+// ---------------------------------------------------------------------------
+// Pacing detail (Pacing page)
+// ---------------------------------------------------------------------------
+
+export type PacingDetail = {
+  pacing: ClientPacing;
+  cumulative: { date: string; actual: number | null; expected: number | null }[];
+  campaigns: { id: string; name: string; status: string | null; dailyBudget: number | null; spend: number; avgDaily: number; share: number }[];
+  /** Sum of daily budgets on active campaigns (ad set budgets are not included). */
+  activeDailyBudgets: number;
+  meta: DataMeta;
+};
+
+export async function getPacingDetail(ctx: ClientContext, now: Date = new Date()): Promise<PacingDetail> {
+  const tz = ctx.settings.timezone;
+  const today = todayIn(tz, now);
+  const month = startOfMonth(today);
+  const [pacing, daily, camps] = await Promise.all([
+    getClientPacing(ctx, now),
+    fetchGrain(ctx, "account", { from: month, to: today }, true),
+    fetchGrain(ctx, "campaign", { from: month, to: today }),
+  ]);
+
+  const byDate = new Map<string, number>();
+  for (const r of daily.rows) if (r.date) byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.spend);
+  const dim = daysInMonth(today);
+  const cumulative: PacingDetail["cumulative"] = [];
+  let running = 0;
+  for (let d = 1; d <= dim; d++) {
+    const date = `${month.slice(0, 8)}${String(d).padStart(2, "0")}`;
+    if (date <= today) running += byDate.get(date) ?? 0;
+    cumulative.push({
+      date,
+      actual: date <= today ? Math.round(running * 100) / 100 : null,
+      expected: pacing.monthlyBudget ? Math.round(((pacing.monthlyBudget * d) / dim) * 100) / 100 : null,
+    });
+  }
+
+  const elapsed = Math.max(1, Number(today.slice(8, 10)));
+  const total = camps.rows.reduce((s, r) => s + r.spend, 0);
+  const campaigns = camps.rows
+    .map((r) => ({
+      id: r.campaignId!,
+      name: r.campaignName ?? r.campaignId!,
+      status: r.campaignStatus ?? null,
+      dailyBudget: r.campaignDailyBudget ?? null,
+      spend: r.spend,
+      avgDaily: r.spend / elapsed,
+      share: total ? r.spend / total : 0,
+    }))
+    .sort((a, b) => b.spend - a.spend);
+  const activeDailyBudgets = campaigns.filter((c) => c.status === "ACTIVE").reduce((s, c) => s + (c.dailyBudget ?? 0), 0);
+
+  return { pacing, cumulative, campaigns, activeDailyBudgets, meta: mergeMeta([pacing.meta, daily.meta, camps.meta]) };
+}

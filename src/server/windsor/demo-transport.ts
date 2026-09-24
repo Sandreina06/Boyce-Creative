@@ -193,6 +193,7 @@ const DIMENSION_FIELDS = new Set<string>([
   F.conversionRanking,
   F.adsetLearningStage,
   F.adsetOptimizationGoal,
+  F.adsetTargeting,
 ]);
 
 function dimValue(field: string, ad: DemoAd, date: string): string | number | null {
@@ -255,6 +256,14 @@ function dimValue(field: string, ad: DemoAd, date: string): string | number | nu
       return ad.adsetName.includes("Interests") || ad.adsetName.includes("Home") ? "FAIL" : "LEARNING";
     case F.adsetOptimizationGoal:
       return "LEAD_GENERATION";
+    case F.adsetTargeting:
+      return JSON.stringify({
+        age_min: 25,
+        age_max: 65,
+        geo_locations: { cities: [{ name: "Demo City", region: "North Carolina", radius: 25, distance_unit: "mile" }] },
+        flexible_spec: ad.adsetName.includes("Home") ? [{ interests: [{ name: "Home improvement" }, { name: "Roofing" }] }] : [],
+        targeting_automation: { advantage_audience: ad.adsetName.includes("Advantage") ? 1 : 0 },
+      });
     default:
       return null;
   }

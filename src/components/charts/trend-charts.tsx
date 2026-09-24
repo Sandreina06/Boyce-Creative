@@ -78,7 +78,7 @@ function MiniChart({
           {kind === "bar" ? (
             <BarChart {...common} barCategoryGap={2}>
               {axes}
-              <Bar dataKey={dataKey} fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              <Bar dataKey={dataKey} fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={18} isAnimationActive={false} />
             </BarChart>
           ) : (
             <LineChart {...common}>
@@ -91,6 +91,7 @@ function MiniChart({
                 activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)" }}
                 connectNulls={false}
                 type="monotone"
+                isAnimationActive={false}
               />
             </LineChart>
           )}

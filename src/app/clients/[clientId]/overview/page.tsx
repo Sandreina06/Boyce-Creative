@@ -143,9 +143,14 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
                 {overview.campaigns.slice(0, 10).map((c) => (
                   <TR key={c.id}>
                     <TD className="max-w-72">
-                      <div className="truncate font-medium" title={c.name}>
+                      <Link
+                        prefetch={false}
+                        href={`/clients/${clientId}/campaigns/${c.id}${qs ? `?${qs}` : ""}`}
+                        className="block truncate font-medium hover:text-primary"
+                        title={c.name}
+                      >
                         {c.name}
-                      </div>
+                      </Link>
                       <div className="flex gap-1.5 text-[11px] text-muted-foreground">
                         {c.status && <Badge variant={c.status === "ACTIVE" ? "good" : "default"}>{c.status}</Badge>}
                         {c.objective && <span>{c.objective.replace("OUTCOME_", "").toLowerCase()}</span>}

@@ -225,3 +225,19 @@ export async function getRecentMetaChanges(ctx: ClientContext, limit = 5) {
     .orderBy(desc(schema.changelogEntries.changedAt))
     .limit(limit);
 }
+
+/** Stored changes touching a campaign (directly or via its ad sets/ads) or an ad set. */
+export async function getEntityChanges(clientId: string, scope: { campaignId?: string; adsetIds?: string[] }, limit = 10) {
+  const { inArray, or } = await import("drizzle-orm");
+  const conds = [
+    ...(scope.campaignId ? [eq(schema.changelogEntries.campaignId, scope.campaignId)] : []),
+    ...(scope.adsetIds?.length ? [inArray(schema.changelogEntries.adsetId, scope.adsetIds)] : []),
+  ];
+  if (!conds.length) return [];
+  return db()
+    .select()
+    .from(schema.changelogEntries)
+    .where(and(eq(schema.changelogEntries.clientId, clientId), eq(schema.changelogEntries.isSystem, false), or(...conds)))
+    .orderBy(desc(schema.changelogEntries.changedAt))
+    .limit(limit);
+}

@@ -74,6 +74,7 @@ export type PerfRow = {
   creative?: CreativeInfo;
   learningStage?: string | null;
   optimizationGoal?: string | null;
+  targeting?: string | null;
   spend: number;
   impressions: number;
   clicks: number;
@@ -143,7 +144,7 @@ const CREATIVE_FIELDS = [
   F.thruplays,
 ];
 
-const DELIVERY_FIELDS = [F.adsetLearningStage, F.adsetOptimizationGoal];
+const DELIVERY_FIELDS = [F.adsetLearningStage, F.adsetOptimizationGoal, F.adsetTargeting];
 
 let windsor: CachedWindsor | undefined;
 
@@ -285,7 +286,11 @@ export function normalizeRows(
           }
         : {}),
       ...(extra.delivery
-        ? { learningStage: str(r[F.adsetLearningStage]) ?? null, optimizationGoal: str(r[F.adsetOptimizationGoal]) ?? null }
+        ? {
+            learningStage: str(r[F.adsetLearningStage]) ?? null,
+            optimizationGoal: str(r[F.adsetOptimizationGoal]) ?? null,
+            targeting: str(r[F.adsetTargeting]) ?? null,
+          }
         : {}),
       spend: num(r[F.spend]),
       impressions: num(r[F.impressions]),

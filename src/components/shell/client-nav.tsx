@@ -23,7 +23,7 @@ export function ClientNav({ clientId, showSettings }: { clientId: string; showSe
     <nav className="-mb-px flex gap-1 overflow-x-auto">
       {SECTIONS.filter(([slug]) => showSettings || slug !== "settings").map(([slug, label]) => {
         const href = `/clients/${clientId}/${slug}`;
-        const active = pathname.startsWith(href);
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link prefetch={false}
             key={slug}

@@ -49,6 +49,8 @@ export const F = {
   // Ad set delivery: LEARNING | FAIL (= "Learning limited") | null (learning complete / inactive)
   adsetLearningStage: "adset_learning_stage_info",
   adsetOptimizationGoal: "adsset_optimization_goal", // sic — Windsor's spelling
+  /** Full targeting spec as JSON (ages, geo, interests, Advantage+ flags). */
+  adsetTargeting: "adset_targeting",
 
   // Base metrics (additive unless noted)
   spend: "spend", // major currency units

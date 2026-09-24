@@ -16,7 +16,7 @@ Design and discovery notes: [`docs/01-discovery-and-architecture.md`](docs/01-di
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Shell, auth, DB, clients & mappings, client switcher, date & comparison engine, Windsor service, agency overview, client overview, KPI settings, budgets & targets | ✅ Built |
-| 2 | Campaign / ad set / ad pages, drilldowns, full pacing page | Next |
+| 2 | Campaign / ad set / ad pages, drilldowns, full pacing page | ✅ Built |
 | 3 | Automatic changelog from Meta's change history, change impact | ✅ Built (chart annotations still to do) |
 | 4 | Deterministic insights, root-cause decomposition, drilldown | |
 | 5 | Creative analysis, breakdowns, saved insights, AI summaries | 🟡 Creative analysis, account health, context-aware strategy and benchmarks built; breakdowns, saved insights and AI summaries still to do |
