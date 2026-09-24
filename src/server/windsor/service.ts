@@ -160,8 +160,13 @@ function transport(): CachedWindsor {
   return windsor;
 }
 
+/** The configured source, without throwing when the Windsor key is missing (UI labelling only). */
 export function dataSource(): DataSource {
-  return env().DATA_SOURCE;
+  try {
+    return env().DATA_SOURCE;
+  } catch {
+    return "windsor";
+  }
 }
 
 export async function getPerformance(q: PerfQuery): Promise<PerfResult> {

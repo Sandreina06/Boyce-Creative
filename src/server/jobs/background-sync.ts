@@ -10,7 +10,7 @@ import { getClientIntelligence } from "../services/intelligence";
 
 /**
  * Background refresh so nobody has to open the dashboard (or press Refresh)
- * for data to stay current. Every BACKGROUND_SYNC_MINUTES (default 30) it:
+ * for data to stay current. Every BACKGROUND_SYNC_MINUTES (default 15) it:
  *   - syncs each client's Meta change history into the changelog
  *   - refreshes the cached Windsor data behind Overview, Creative, Insights and pacing
  * Runs inside the web server process (Railway keeps it running).
@@ -63,7 +63,7 @@ export async function runBackgroundSync(): Promise<void> {
 }
 
 export function startBackgroundSync(): void {
-  const minutes = Number(process.env.BACKGROUND_SYNC_MINUTES ?? 30);
+  const minutes = Number(process.env.BACKGROUND_SYNC_MINUTES ?? 15);
   if (!Number.isFinite(minutes) || minutes <= 0) {
     console.log("[background-sync] disabled (BACKGROUND_SYNC_MINUTES <= 0)");
     return;

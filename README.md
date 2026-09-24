@@ -46,7 +46,7 @@ claims causation.
 ## Runs by itself
 
 - **Background sync** (`src/server/jobs/background-sync.ts`, started from `src/instrumentation.ts`):
-  every 30 minutes (`BACKGROUND_SYNC_MINUTES`) it syncs every client's Meta change history and
+  every 15 minutes (`BACKGROUND_SYNC_MINUTES`) it syncs every client's Meta change history and
   refreshes the data behind Overview, Creative, Insights and pacing, even if nobody visits.
 - **Stale-while-revalidate cache:** pages show the last saved data instantly and refresh it in the
   background; "Last updated" always shows the real fetch time.
@@ -82,7 +82,7 @@ Guarantees, each covered by tests or lint:
 Requirements: Node ≥ 20.9, PostgreSQL.
 
 ```bash
-cp .env.example .env.local        # set DATABASE_URL; DATA_SOURCE=demo needs no Windsor key
+cp .env.example .env.local        # set DATABASE_URL and WINDSOR_API_KEY (or DATA_SOURCE=demo locally)
 npm install
 export $(grep -v '^#' .env.local | xargs)
 npm run db:migrate
@@ -90,8 +90,8 @@ ADMIN_EMAIL=you@example.com ADMIN_NAME="You" ADMIN_PASSWORD='a-long-password' np
 npm run dev
 ```
 
-With `DATA_SOURCE=demo` every page carries a **DEMO DATA** banner and numbers are synthetic.
-Set `DATA_SOURCE=windsor` and `WINDSOR_API_KEY` for real Meta data.
+The app uses real Windsor data by default. `DATA_SOURCE=demo` (synthetic numbers, with a DEMO DATA
+banner) is for local development only and is ignored in production unless `ALLOW_DEMO_DATA=true`.
 
 Checks: `npm run typecheck`, `npm run lint`, `npm test`.
 

@@ -74,6 +74,7 @@ const NOISE_EVENTS = new Set([
   "ad_account_add_user_to_role",
   "ad_account_remove_user_from_role",
   "update_ad_run_status_to_be_set_after_review",
+  "ad_account_reset_spend_limit",
 ]);
 
 /** Intermediate states Meta cycles through after every edit; not a decision. */
@@ -117,21 +118,60 @@ function parseExtra(raw: unknown): Record<string, unknown> {
   }
 }
 
-/** Render an old/new value for humans. Budgets are minor units (cents). */
+const ENUMS: Record<string, string> = {
+  LOWEST_COST_BID_STRATEGY: "Highest volume (lowest cost)",
+  LOWEST_COST_WITHOUT_CAP: "Highest volume (lowest cost)",
+  COST_CAP: "Cost per result goal",
+  LOWEST_COST_WITH_BID_CAP: "Bid cap",
+  LOWEST_COST_WITH_MIN_ROAS: "ROAS goal",
+  TARGET_COST: "Target cost",
+};
+
+const pretty = (v: string) =>
+  ENUMS[v] ?? (/^[A-Z0-9_]+$/.test(v) && v.includes("_") ? v.toLowerCase().replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : v);
+
+function money(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD" }).format(cents / 100);
+}
+
+/**
+ * Render an old/new value for humans, using the shapes Meta actually returns
+ * (verified on real Beechwood/Edwards activity): payment_amount objects for
+ * budgets (minor units), {content, children} arrays for targeting, arrays of
+ * asset URLs for creative, enums for bid strategy.
+ */
 export function renderValue(v: unknown, eventType: string, currency = "USD"): string | null {
   if (v == null || v === "") return null;
-  if (/budget|spend_cap|bid_amount/.test(eventType) && (typeof v === "number" || /^\d+$/.test(String(v)))) {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(v) / 100);
+  if (typeof v === "object" && !Array.isArray(v)) {
+    const o = v as Record<string, unknown>;
+    if (o.type === "payment_amount") {
+      const amount = (o.old_value ?? o.new_value ?? o.amount) as number | null | undefined;
+      if (amount == null) return null;
+      const per = typeof o.additional_value === "string" && /day/i.test(o.additional_value) ? "/day" : "";
+      return `${money(Number(amount), String(o.currency ?? currency))}${per}`;
+    }
+    return truncate(JSON.stringify(v));
   }
   if (Array.isArray(v)) {
+    if (!v.length) return null;
     if (v.some((x) => typeof x === "string" && /^https?:\/\//.test(x))) return "Creative asset";
+    if (v.every((x) => x && typeof x === "object" && "content" in x)) {
+      return truncate(
+        (v as { content: string; children?: string[] }[])
+          .filter((x) => !/^placements?:/i.test(x.content))
+          .map((x) => `${x.content.replace(/:$/, "")}: ${(x.children ?? []).join(", ")}`)
+          .join(" · "),
+        240,
+      );
+    }
     return truncate(v.map((x) => (typeof x === "object" ? JSON.stringify(x) : String(x))).join(", "));
   }
-  if (typeof v === "object") return truncate(JSON.stringify(v));
-  const s = String(v);
-  if (/^https?:\/\//.test(s)) return "Creative asset";
-  if (s.startsWith("{") || s.startsWith("[")) return truncate(s);
-  return truncate(s);
+  if (/budget|spend_cap|bid_amount/.test(eventType) && (typeof v === "number" || /^\d+$/.test(String(v)))) {
+    return money(Number(v), currency);
+  }
+  const str = String(v);
+  if (/^https?:\/\//.test(str)) return "Creative asset";
+  return truncate(pretty(str));
 }
 
 const truncate = (s: string, n = 160) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -146,8 +186,10 @@ export function parseActivity(row: RawActivity, accountId: string, currency = "U
   const entityType = entityKind(objectType, eventType);
   const actor = row.activity_actor_name ? String(row.activity_actor_name) : null;
   const isSystem = SYSTEM_ACTORS.has((actor ?? "").trim().toLowerCase());
-  const oldV = renderValue(extra.old_value, eventType, currency);
+  let oldV = renderValue(extra.old_value, eventType, currency);
   const newV = renderValue(extra.new_value, eventType, currency);
+  // Meta labels only the new budget "Per day"; the old one is the same kind of budget.
+  if (oldV && newV?.endsWith("/day") && /^[^/]*\d$/.test(oldV) && typeof extra.old_value === "object") oldV = `${oldV}/day`;
 
   // Status edits arrive as "Active → Pending Process" then "Pending Process → Inactive".
   // The decision is the final state; transitions INTO a transient state, and Meta
@@ -155,7 +197,12 @@ export function parseActivity(row: RawActivity, accountId: string, currency = "U
   const isStatus = eventType.includes("run_status");
   const transient =
     isStatus && (TRANSIENT_STATUS.test(newV ?? "") || (isSystem && TRANSIENT_STATUS.test(oldV ?? "")));
-  const isNoise = NOISE_EVENTS.has(eventType) || transient || (isSystem && entityType === "audience");
+  const isNoise =
+    NOISE_EVENTS.has(eventType) ||
+    eventType.includes("budget_scheduling") ||
+    transient ||
+    (isStatus && oldV != null && oldV === newV) ||
+    (isSystem && entityType === "audience");
 
   const parentRaw = extra.campaign_id;
   const parentAdsetId =
@@ -177,7 +224,11 @@ export function parseActivity(row: RawActivity, accountId: string, currency = "U
     isSystem,
     isNoise,
     eventType,
-    action: creativeSwap ? "Ad creative replaced" : String(row.activity_translated_event_type ?? eventType.replace(/_/g, " ")),
+    action: creativeSwap
+      ? "Ad creative replaced"
+      : isStatus
+        ? describeStatus(statusLabel(oldV), statusLabel(newV), entityType)
+        : String(row.activity_translated_event_type ?? eventType.replace(/_/g, " ")),
     category: categorize(eventType, entityType),
     entityType,
     entityId: row.activity_object_id != null ? String(row.activity_object_id) : null,
@@ -212,10 +263,16 @@ export function resolveStatusChains(all: ParsedChange[]): ParsedChange[] {
       const p = list[k];
       if (c.changedAt.getTime() - p.changedAt.getTime() > 10 * 60_000) break;
       if (p.previousValue && !TRANSIENT_STATUS.test(p.previousValue)) {
-        return { ...c, previousValue: p.previousValue, action: describeStatus(p.previousValue, c.newValue, c.entityType) };
+        // Net no-op (e.g. Active → Pending Process → Active after an edit) is not a status decision.
+        return {
+          ...c,
+          previousValue: p.previousValue,
+          isNoise: c.isNoise || p.previousValue === c.newValue,
+          action: describeStatus(p.previousValue, c.newValue, c.entityType),
+        };
       }
     }
-    return { ...c, action: describeStatus(null, c.newValue, c.entityType) };
+    return { ...c, previousValue: null, action: describeStatus(null, c.newValue, c.entityType) };
   });
 }
 

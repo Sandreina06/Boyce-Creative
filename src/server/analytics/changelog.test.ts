@@ -100,3 +100,29 @@ describe("summarizeImpact", () => {
     expect(s).not.toMatch(/caused by|because of/);
   });
 });
+
+describe("real Beechwood shapes (2026-08)", () => {
+  const ev = (type: string, obj: string, extra: object, actor = "Sonia Nuñez") =>
+    parseActivity({ activity_event_time: "2026-08-12T14:24:00+0000", activity_actor_name: actor, activity_event_type: type, activity_object_type: obj, activity_object_id: "1", activity_object_name: "X", activity_extra_data: JSON.stringify(extra) }, "798492569058129")!;
+
+  it("renders nested payment_amount budgets as per-day money", () => {
+    const b = ev("update_campaign_budget", "CAMPAIGN_GROUP", {
+      old_value: { type: "payment_amount", currency: "USD", old_value: 5000, additional_type: "status_string", additional_value: "" },
+      new_value: { type: "payment_amount", currency: "USD", new_value: 3000, additional_type: "status_string", additional_value: "Per day" },
+      type: "composite_data",
+    });
+    expect([b.category, b.previousValue, b.newValue]).toEqual(["budget", "$50.00/day", "$30.00/day"]);
+  });
+
+  it("summarises targeting and prettifies bid strategies", () => {
+    const t = ev("update_ad_set_target_spec", "CAMPAIGN", { old_value: [], new_value: [{ content: "Location:", children: ["Richmond (+25 mi)"] }, { content: "Age:", children: ["28 - 65+"] }, { content: "Placements:", children: ["Feed"] }] });
+    expect(t.category).toBe("targeting");
+    expect(t.newValue).toBe("Location: Richmond (+25 mi) · Age: 28 - 65+");
+    expect(ev("update_ad_set_bid_strategy", "CAMPAIGN", { old_value: null, new_value: "LOWEST_COST_BID_STRATEGY" }).newValue).toBe("Highest volume (lowest cost)");
+  });
+
+  it("filters Meta's monthly spend-limit reset and budget scheduling toggles", () => {
+    expect(ev("ad_account_reset_spend_limit", "ACCOUNT", { new_value: 110000, type: "payment_amount" }, "Meta").isNoise).toBe(true);
+    expect(ev("update_campaign_group_budget_scheduling_state", "CAMPAIGN_GROUP", { new_value: false }).isNoise).toBe(true);
+  });
+});
