@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Delta } from "@/components/dashboard/delta";
 import { DataStatus } from "@/components/shell/data-status";
+import { SectionError, settle } from "@/components/dashboard/section-error";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMetric } from "@/lib/format";
@@ -25,7 +26,9 @@ export default async function ChangelogPage(props: PageProps<"/clients/[clientId
   const dates = resolveDatesFromParams(params, ctx.settings.timezone);
   const includeSystem = params.system === "1";
   const category = typeof params.cat === "string" ? params.cat : null;
-  const full = await getChangelog(ctx, dates.range, { includeSystem });
+  const fullR = await settle(getChangelog(ctx, dates.range, { includeSystem }));
+  if (!fullR.ok) return <SectionError title="Changelog" message={fullR.error} />;
+  const full = fullR.data;
   const all = full.entries;
   const log = { ...full, entries: category ? all.filter((e) => e.category === category) : all };
   const categories = [...new Set(all.map((e) => e.category))] as ChangeCategory[];

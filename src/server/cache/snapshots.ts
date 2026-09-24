@@ -68,6 +68,26 @@ export class CachedWindsor {
       };
     }
 
+    // Stale-while-revalidate: an expired snapshot is served immediately (with its
+    // true fetchedAt, so "Last updated" stays honest) while a refresh runs in the background.
+    if (existing && !opts.forceRefresh) {
+      if (!inFlight.has(hash)) void this.refresh(req, hash, existing).catch(() => undefined);
+      return {
+        rows: existing.rows as WindsorRow[],
+        source: this.transport.source,
+        fetchedAt: existing.fetchedAt,
+        fromCache: true,
+      };
+    }
+
+    return this.refresh(req, hash, existing);
+  }
+
+  private refresh(
+    req: GetDataRequest,
+    hash: string,
+    existing: typeof schema.performanceSnapshots.$inferSelect | undefined,
+  ): Promise<GetDataResponse & { stale?: boolean }> {
     const pending = inFlight.get(hash);
     if (pending) return pending;
 

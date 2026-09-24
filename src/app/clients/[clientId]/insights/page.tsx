@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IssueList } from "@/components/dashboard/issue-list";
 import { DataStatus } from "@/components/shell/data-status";
+import { SectionError, settle } from "@/components/dashboard/section-error";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMetric } from "@/lib/format";
@@ -23,7 +24,9 @@ export default async function InsightsPage(props: PageProps<"/clients/[clientId]
   if (!ctx.accountIds.length) return <p className="text-sm text-muted-foreground">No Meta ad account mapped.</p>;
 
   const dates = resolveDatesFromParams(params, ctx.settings.timezone);
-  const intel = await getClientIntelligence(ctx, dates);
+  const intelR = await settle(getClientIntelligence(ctx, dates));
+  if (!intelR.ok) return <SectionError title="Issues & recommendations" message={intelR.error} />;
+  const intel = intelR.data;
   const s = ctx.settings;
   const b = intel.benchmark;
   const cur = s.currency;

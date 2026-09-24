@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Meta CDN thumbnails are signed, expiring URLs; next/image would cache them. */
 import Link from "next/link";
 import { DataStatus } from "@/components/shell/data-status";
+import { SectionError, settle } from "@/components/dashboard/section-error";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -32,7 +33,9 @@ export default async function CreativePage(props: PageProps<"/clients/[clientId]
   if (!ctx.accountIds.length) return <p className="text-sm text-muted-foreground">No Meta ad account mapped.</p>;
 
   const dates = resolveDatesFromParams(params, ctx.settings.timezone);
-  const intel = await getClientIntelligence(ctx, dates);
+  const intelR = await settle(getClientIntelligence(ctx, dates));
+  if (!intelR.ok) return <SectionError title="Creative analysis" message={intelR.error} />;
+  const intel = intelR.data;
   const cur = ctx.settings.currency;
   const filter = typeof params.label === "string" && LABEL_ORDER.includes(params.label as CreativeLabel) ? (params.label as CreativeLabel) : null;
   const shown = filter ? intel.creatives.filter((c) => c.label === filter || c.alsoFlags.includes(filter)) : intel.creatives;

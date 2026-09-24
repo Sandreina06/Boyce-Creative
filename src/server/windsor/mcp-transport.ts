@@ -9,6 +9,32 @@ import {
   WindsorError,
 } from "./client";
 
+/** Max Windsor requests in flight at once (per server process). Trial/plan limits are low. */
+const MAX_CONCURRENCY = Math.max(1, Number(process.env.WINDSOR_MAX_CONCURRENCY ?? 3));
+const MAX_ATTEMPTS = 3;
+
+let active = 0;
+const waiting: (() => void)[] = [];
+
+async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (active >= MAX_CONCURRENCY) await new Promise<void>((resolve) => waiting.push(resolve));
+  active++;
+  try {
+    return await fn();
+  } finally {
+    active--;
+    waiting.shift()?.();
+  }
+}
+
+/** Errors worth retrying: rate limits, timeouts, overloaded/5xx, dropped connections. */
+export function isTransient(message: string): boolean {
+  if (/not compatible|invalid|not available|unknown field|permission|unauthori[sz]ed|forbidden/i.test(message)) return false;
+  return /rate|limit|too many|429|timeout|timed out|overload|temporar|unavailable|5\d\d|ECONNRESET|socket|network|fetch failed|aborted/i.test(message);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * Talks to Windsor's hosted MCP server (https://mcp.windsor.ai/) with a
  * Windsor API key (`Authorization: Bearer …`). Windsor holds the Meta
@@ -63,6 +89,23 @@ export class McpWindsorTransport implements WindsorTransport {
   }
 
   async getData(req: GetDataRequest): Promise<WindsorRow[]> {
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        return await withSlot(() => this.getDataOnce(req));
+      } catch (err) {
+        lastErr = err;
+        const msg = (err as Error).message ?? String(err);
+        if (attempt === MAX_ATTEMPTS || !isTransient(msg)) break;
+        const wait = 1000 * 3 ** (attempt - 1) + Math.random() * 500; // ~1s, ~3s
+        console.warn(`[windsor] transient error (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${Math.round(wait)}ms: ${msg}`);
+        await sleep(wait);
+      }
+    }
+    throw lastErr;
+  }
+
+  private async getDataOnce(req: GetDataRequest): Promise<WindsorRow[]> {
     const payload = (await this.callTool("get_data", {
       connector: req.connector,
       accounts: req.accounts,

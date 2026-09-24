@@ -43,6 +43,17 @@ merged into one decision ("Ad paused: Active → Paused"). Each change shows 7 d
 after, measured one level up for pauses and launches, with a plain-English readout that never
 claims causation.
 
+## Runs by itself
+
+- **Background sync** (`src/server/jobs/background-sync.ts`, started from `src/instrumentation.ts`):
+  every 30 minutes (`BACKGROUND_SYNC_MINUTES`) it syncs every client's Meta change history and
+  refreshes the data behind Overview, Creative, Insights and pacing, even if nobody visits.
+- **Stale-while-revalidate cache:** pages show the last saved data instantly and refresh it in the
+  background; "Last updated" always shows the real fetch time.
+- **Windsor protection:** at most 3 Windsor requests at a time (`WINDSOR_MAX_CONCURRENCY`) with
+  automatic retries on rate limits and timeouts. A section that fails shows its own error card
+  instead of breaking the page.
+
 ## How data flows
 
 ```

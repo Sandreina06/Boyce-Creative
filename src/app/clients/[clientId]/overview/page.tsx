@@ -23,6 +23,7 @@ import { mergeMeta } from "@/server/services/data-meta";
 import { getClientIntelligence } from "@/server/services/intelligence";
 import { getRecentMetaChanges } from "@/server/services/changelog";
 import { IssueList } from "@/components/dashboard/issue-list";
+import { SectionError, settle } from "@/components/dashboard/section-error";
 
 export default async function OverviewPage(props: PageProps<"/clients/[clientId]/overview">) {
   const { clientId } = await props.params;
@@ -45,13 +46,17 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
   }
 
   const dates = resolveDatesFromParams(params, ctx.settings.timezone);
-  const [overview, pacing, changes, agency, intel] = await Promise.all([
-    getClientOverview(ctx, dates),
-    getClientPacing(ctx),
+  const [overviewR, pacingR, changes, agency, intelR] = await Promise.all([
+    settle(getClientOverview(ctx, dates)),
+    settle(getClientPacing(ctx)),
     getRecentMetaChanges(ctx).catch(() => []),
     getAgencySettings(),
-    getClientIntelligence(ctx, dates),
+    settle(getClientIntelligence(ctx, dates)),
   ]);
+  if (!overviewR.ok) return <SectionError title="Performance data" message={overviewR.error} />;
+  const overview = overviewR.data;
+  const pacing = pacingR.ok ? pacingR.data : null;
+  const intel = intelR.ok ? intelR.data : null;
   const currency = ctx.settings.currency;
   const compareLabel = COMPARE_MODES.find((m) => m.id === dates.compare)?.label.toLowerCase() ?? null;
   const primaryKey = kpiToMetric(ctx.settings.primaryKpi);
@@ -61,12 +66,12 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
     resultLabel: ctx.settings.primaryConversionLabel,
     current: overview.totals.current,
     previous: overview.totals.previous,
-    pacing,
+    pacing: pacing ?? null,
     thresholds: agency.attentionThresholds,
     comparisonLabel: compareLabel ?? "previous period",
     formatValue: (k, v) => formatMetric(k, v, currency),
   });
-  const meta = mergeMeta([overview.meta, pacing.meta, intel.meta]);
+  const meta = mergeMeta([overview.meta, ...(pacing ? [pacing.meta] : []), ...(intel ? [intel.meta] : [])]);
 
   return (
     <>
@@ -189,7 +194,11 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
               <AttentionList items={alerts.map((a, i) => ({ key: String(i), alert: a }))} />
             </CardContent>
           </Card>
-          <PacingCard pacing={pacing} currency={currency} settingsHref={`/clients/${clientId}/settings`} />
+          {pacing ? (
+            <PacingCard pacing={pacing} currency={currency} settingsHref={`/clients/${clientId}/settings`} />
+          ) : (
+            <SectionError title="Budget pacing" message={!pacingR.ok ? pacingR.error : ""} />
+          )}
         </div>
       </div>
 
@@ -201,11 +210,15 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
               <CardDescription>From account data, client context and industry benchmarks</CardDescription>
             </div>
             <Link prefetch={false} href={`/clients/${clientId}/insights${qs ? `?${qs}` : ""}`} className="text-xs text-primary hover:underline">
-              All {intel.issues.length} →
+              All {intel?.issues.length ?? 0} →
             </Link>
           </CardHeader>
           <CardContent className="pt-1">
-            <IssueList issues={intel.issues.filter((i) => i.severity !== "info").slice(0, 4)} compact />
+            {intel ? (
+              <IssueList issues={intel.issues.filter((i) => i.severity !== "info").slice(0, 4)} compact />
+            ) : (
+              <p className="text-sm text-muted-foreground">Couldn&apos;t load issues: {!intelR.ok ? intelR.error : ""}</p>
+            )}
           </CardContent>
         </Card>
         <Card>
