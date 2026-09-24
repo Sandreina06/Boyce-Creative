@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { listAccessibleClients, loadClientContext, type ClientContext } from "../auth/access";
 import type { SessionUser } from "../auth/session";
 import { db, schema } from "../db";
@@ -9,6 +9,7 @@ import { COMPARE_MODES, resolveDatesFromParams, type ResolvedDates } from "../an
 import { derive, kpiToMetric, sumBase, type Derived, type MetricKey } from "../analytics/metrics";
 import { formatMetric } from "@/lib/format";
 import { mergeMeta, toBase, type DataMeta } from "../windsor/service";
+import { syncMetaChanges } from "./changelog";
 import { fetchGrain, getAgencySettings, getClientPacing, metricLabel, type ClientPacing } from "./client-data";
 
 export type AgencyClientRow = {
@@ -43,6 +44,14 @@ export async function getAgencyOverview(
   const agency = await getAgencySettings();
   const clientIds = clients.map((c) => c.id);
 
+  // Sync each client's Meta change history first so "Last change" is current.
+  await Promise.all(
+    clients.map(async (c) => {
+      const ctx = await loadClientContext(user, c.id);
+      if (ctx.accountIds.length) await syncMetaChanges(ctx).catch(() => undefined);
+    }),
+  );
+
   const [targets, lastChanges] = await Promise.all([
     clientIds.length
       ? db().select().from(schema.clientTargets).where(inArray(schema.clientTargets.clientId, clientIds))
@@ -55,7 +64,7 @@ export async function getAgencyOverview(
             action: schema.changelogEntries.action,
           })
           .from(schema.changelogEntries)
-          .where(inArray(schema.changelogEntries.clientId, clientIds))
+          .where(and(inArray(schema.changelogEntries.clientId, clientIds), eq(schema.changelogEntries.isSystem, false)))
           .orderBy(schema.changelogEntries.clientId, desc(schema.changelogEntries.changedAt))
       : [],
   ]);

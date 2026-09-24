@@ -17,7 +17,7 @@ Design and discovery notes: [`docs/01-discovery-and-architecture.md`](docs/01-di
 |---|---|---|
 | 1 | Shell, auth, DB, clients & mappings, client switcher, date & comparison engine, Windsor service, agency overview, client overview, KPI settings, budgets & targets | ✅ Built |
 | 2 | Campaign / ad set / ad pages, drilldowns, full pacing page | Next |
-| 3 | Manual changelog, Meta-detected changes, change impact, annotations | |
+| 3 | Automatic changelog from Meta's change history, change impact | ✅ Built (chart annotations still to do) |
 | 4 | Deterministic insights, root-cause decomposition, drilldown | |
 | 5 | Creative analysis, breakdowns, saved insights, AI summaries | 🟡 Creative analysis, account health, context-aware strategy and benchmarks built; breakdowns, saved insights and AI summaries still to do |
 
@@ -32,6 +32,16 @@ Design and discovery notes: [`docs/01-discovery-and-architecture.md`](docs/01-di
   limited, single-ad ad sets, concentration, tracking gaps, pacing, saturation) plus strategy that
   uses the client's context (industry, lead method, service area, notes in Settings) and published
   benchmarks with sources (`src/server/analytics/benchmarks.ts`).
+
+## Automatic changelog
+
+`/clients/[id]/changelog` is populated automatically from Meta's ad account activity log
+(Windsor `activity_*` fields, one query per ad account, last 90 days, re-synced on page load
+and stored in `changelog_entries` so history is kept). Noise is filtered out: billing, image-library
+uploads, delivery notices, Meta's review cycles and automatic audiences. Two-step status edits are
+merged into one decision ("Ad paused: Active → Paused"). Each change shows 7 days before vs 7 days
+after, measured one level up for pauses and launches, with a plain-English readout that never
+claims causation.
 
 ## How data flows
 

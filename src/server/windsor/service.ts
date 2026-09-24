@@ -5,7 +5,7 @@ import type { DateRange } from "../analytics/date-ranges";
 import type { BaseMetrics } from "../analytics/metrics";
 import type { DataSource, WindsorRow, WindsorTransport } from "./client";
 import { DemoWindsorTransport } from "./demo-transport";
-import { F, WINDSOR_CONNECTOR } from "./fields";
+import { ACTIVITY_FIELDS, F, WINDSOR_CONNECTOR } from "./fields";
 import { McpWindsorTransport } from "./mcp-transport";
 
 /**
@@ -193,6 +193,29 @@ export async function getPerformance(q: PerfQuery): Promise<PerfResult> {
     }),
     meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale },
   };
+}
+
+/**
+ * Meta change history for ONE ad account (activity fields cannot be combined
+ * with account_id, so each account is queried separately and attributed here).
+ */
+export async function getAccountActivity(
+  accountId: string,
+  range: DateRange,
+  opts: { forceRefresh?: boolean } = {},
+): Promise<{ rows: WindsorRow[]; meta: DataMeta }> {
+  const res = await transport().getData(
+    {
+      connector: WINDSOR_CONNECTOR,
+      accounts: [accountId],
+      fields: [...ACTIVITY_FIELDS],
+      dateFrom: range.from,
+      dateTo: range.to,
+      options: { activities_add_children: true },
+    },
+    opts,
+  );
+  return { rows: res.rows, meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale } };
 }
 
 /** Convenience wrappers matching the brief's service vocabulary. */

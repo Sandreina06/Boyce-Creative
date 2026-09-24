@@ -17,11 +17,11 @@ import {
   getAgencySettings,
   getClientOverview,
   getClientPacing,
-  getRecentChanges,
   metricLabel,
 } from "@/server/services/client-data";
 import { mergeMeta } from "@/server/services/data-meta";
 import { getClientIntelligence } from "@/server/services/intelligence";
+import { getRecentMetaChanges } from "@/server/services/changelog";
 import { IssueList } from "@/components/dashboard/issue-list";
 
 export default async function OverviewPage(props: PageProps<"/clients/[clientId]/overview">) {
@@ -48,7 +48,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
   const [overview, pacing, changes, agency, intel] = await Promise.all([
     getClientOverview(ctx, dates),
     getClientPacing(ctx),
-    getRecentChanges(ctx.client.id),
+    getRecentMetaChanges(ctx).catch(() => []),
     getAgencySettings(),
     getClientIntelligence(ctx, dates),
   ]);
@@ -212,7 +212,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
           <CardHeader>
             <div>
               <CardTitle>Recent changes</CardTitle>
-              <CardDescription>From the optimization changelog</CardDescription>
+              <CardDescription>Synced automatically from Meta&apos;s change history</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="pt-2">
@@ -225,15 +225,15 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
                       <span className="font-medium">{c.action}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {c.authorName ?? "Unknown"} · {formatRelativeTime(c.changedAt)}
-                      {c.campaignName && ` · ${c.campaignName}`}
+                      {c.actorName ?? "Unknown"} · {formatRelativeTime(c.changedAt)}
+                      {(c.adName ?? c.adsetName ?? c.campaignName) && ` · ${c.adName ?? c.adsetName ?? c.campaignName}`}
                       {c.previousValue && c.newValue && ` · ${c.previousValue} → ${c.newValue}`}
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">No changes logged yet. The changelog arrives in Phase 3.</p>
+              <p className="text-sm text-muted-foreground">No changes found in Meta&apos;s change history yet.</p>
             )}
           </CardContent>
         </Card>

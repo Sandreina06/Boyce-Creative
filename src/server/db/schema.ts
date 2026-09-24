@@ -269,11 +269,23 @@ export const changelogEntries = pgTable(
     notes: text("notes"),
     tags: text("tags").array().notNull().default([]),
     source: changelogSource("source").notNull().default("manual"),
+    /** Stable hash of the Meta activity row — used to de-duplicate automatic syncs. */
     metaActivityRef: text("meta_activity_ref"),
+    /** Who made the change in Meta (person's name, or "Meta" for automatic system events). */
+    actorName: text("actor_name"),
+    /** True for changes Meta made itself (delivery, review, automatic audiences). */
+    isSystem: boolean("is_system").notNull().default(false),
+    /** Raw Meta activity event type, e.g. update_ad_run_status. */
+    eventType: text("event_type"),
+    /** Which object changed: account | campaign | adset | ad | audience | other. */
+    entityType: text("entity_type"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("changelog_client_time_idx").on(t.clientId, t.changedAt)],
+  (t) => [
+    index("changelog_client_time_idx").on(t.clientId, t.changedAt),
+    uniqueIndex("changelog_meta_ref_unique").on(t.metaActivityRef),
+  ],
 );
 
 export const annotations = pgTable(

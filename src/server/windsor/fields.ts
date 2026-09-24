@@ -61,6 +61,18 @@ export const F = {
   dataFetchedAt: "data_fetched_at",
 } as const;
 
+/** Meta ad account activity log (change history). Verified 2026-09-23. */
+export const ACTIVITY_FIELDS = [
+  "activity_event_time",
+  "activity_actor_name",
+  "activity_event_type",
+  "activity_translated_event_type",
+  "activity_object_type",
+  "activity_object_id",
+  "activity_object_name",
+  "activity_extra_data",
+] as const;
+
 /** Conversion (result) fields a client can pick as its primary conversion. */
 export const CONVERSION_FIELDS = [
   { id: "actions_lead", label: "Leads (all sources)" },

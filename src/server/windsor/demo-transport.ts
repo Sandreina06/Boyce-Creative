@@ -12,6 +12,7 @@ export class DemoWindsorTransport implements WindsorTransport {
   readonly source = "demo" as const;
 
   async getData(req: GetDataRequest): Promise<WindsorRow[]> {
+    if (req.fields.includes("activity_event_type")) return demoActivity(req);
     const dims = req.fields.filter((f) => DIMENSION_FIELDS.has(f));
     const dates = eachDate(req.dateFrom, req.dateTo);
     const groups = new Map<string, { dims: WindsorRow; m: Metrics; days: Set<string> }>();
@@ -292,6 +293,45 @@ function metricValue(field: string, m: Metrics, frequency: number, fetchedAt: st
 }
 
 // ---------------------------------------------------------------------------
+
+/** Synthetic change history shaped exactly like Meta's activity log. */
+function demoActivity(req: GetDataRequest): WindsorRow[] {
+  const rows: WindsorRow[] = [];
+  const dates = eachDate(req.dateFrom, req.dateTo);
+  for (const accountId of req.accounts) {
+    const ads = buildTree(accountId);
+    const at = (daysFromEnd: number, hour: number) => {
+      const d = dates[Math.max(0, dates.length - 1 - daysFromEnd)];
+      return `${d}T${String(hour).padStart(2, "0")}:15:00+0000`;
+    };
+    const push = (time: string, actor: string, type: string, label: string, objType: string, id: string, name: string, extra: object) =>
+      rows.push({
+        activity_event_time: time,
+        activity_actor_name: actor,
+        activity_event_type: type,
+        activity_translated_event_type: label,
+        activity_object_type: objType,
+        activity_object_id: id,
+        activity_object_name: name,
+        activity_extra_data: JSON.stringify(extra),
+      });
+    const fatigued = ads[0];
+    const camp = ads[0];
+    const adset = ads[3];
+    push(at(20, 15), "Demo Manager", "update_campaign_budget", "Campaign budget updated", "CAMPAIGN_GROUP", camp.campaignId, camp.campaignName, {
+      old_value: camp.campaignDailyBudgetMinor,
+      new_value: Math.round(camp.campaignDailyBudgetMinor * 1.2),
+    });
+    push(at(14, 17), "Demo Manager", "update_ad_run_status", "Ad status updated", "ADGROUP", ads[2].adId, ads[2].adName, { old_value: "Active", new_value: "Pending Process", campaign_id: Number(ads[2].adsetId) });
+    push(at(14, 17), "Demo Manager", "update_ad_run_status", "Ad status updated", "ADGROUP", ads[2].adId, ads[2].adName, { old_value: "Pending Process", new_value: "Inactive", campaign_id: Number(ads[2].adsetId) });
+    push(at(9, 14), "Demo Manager", "create_ad", "Ad created", "ADGROUP", fatigued.adId, `${fatigued.adName} v2`, { campaign_id: { new: Number(fatigued.adsetId) } });
+    push(at(9, 14), "Meta", "update_ad_run_status", "Ad status updated", "ADGROUP", fatigued.adId, fatigued.adName, { old_value: "Pending Review", new_value: "Active" });
+    push(at(5, 16), "Demo Manager", "update_ad_set_targeting", "Ad set targeting updated", "CAMPAIGN", adset.adsetId, adset.adsetName, { old_value: "Ages 25-54", new_value: "Ages 30-65, Advantage+ audience on" });
+    push(at(3, 9), "Meta", "ad_account_billing_charge", "Account billed", "ACCOUNT", accountId, "Demo account", { new_value: 40000 });
+    push(at(1, 11), "Demo Manager", "update_ad_set_bid_strategy", "Ad set bid strategy updated", "CAMPAIGN", adset.adsetId, adset.adsetName, { old_value: "Lowest cost", new_value: "Cost per result goal" });
+  }
+  return rows;
+}
 
 function eachDate(from: string, to: string): string[] {
   const out: string[] = [];
