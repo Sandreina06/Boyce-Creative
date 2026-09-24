@@ -29,7 +29,26 @@ export type PerfQuery = {
   /** Windsor conversion value field ids. */
   valueFields: string[];
   attributionWindow: string;
+  /** Ad grain only: creative text, rankings and video metrics. */
+  includeCreative?: boolean;
+  /** Ad set grain only: learning stage and optimization goal. */
+  includeDelivery?: boolean;
   forceRefresh?: boolean;
+};
+
+export type CreativeInfo = {
+  thumbnailUrl: string | null;
+  destinationUrl: string | null;
+  title: string | null;
+  body: string | null;
+  callToAction: string | null;
+  qualityRanking: string | null;
+  engagementRanking: string | null;
+  conversionRanking: string | null;
+  videoViews3s: number | null;
+  videoP25: number | null;
+  videoP100: number | null;
+  thruplays: number | null;
 };
 
 export type PerfRow = {
@@ -52,6 +71,9 @@ export type PerfRow = {
   adName?: string;
   adStatus?: string;
   creativeId?: string;
+  creative?: CreativeInfo;
+  learningStage?: string | null;
+  optimizationGoal?: string | null;
   spend: number;
   impressions: number;
   clicks: number;
@@ -106,6 +128,23 @@ const GRAIN_FIELDS: Record<Grain, string[]> = {
 
 const BASE_METRIC_FIELDS = [F.spend, F.impressions, F.clicks, F.linkClicks, F.reach];
 
+const CREATIVE_FIELDS = [
+  F.thumbnailUrl,
+  F.destinationUrl,
+  F.adTitle,
+  F.adBody,
+  F.callToAction,
+  F.qualityRanking,
+  F.engagementRanking,
+  F.conversionRanking,
+  F.videoViews3s,
+  F.videoP25,
+  F.videoP100,
+  F.thruplays,
+];
+
+const DELIVERY_FIELDS = [F.adsetLearningStage, F.adsetOptimizationGoal];
+
 let windsor: CachedWindsor | undefined;
 
 function transport(): CachedWindsor {
@@ -128,6 +167,8 @@ export async function getPerformance(q: PerfQuery): Promise<PerfResult> {
   const fields = uniq([
     ...(q.daily ? [F.date] : []),
     ...GRAIN_FIELDS[q.grain],
+    ...(q.includeCreative && q.grain === "ad" ? CREATIVE_FIELDS : []),
+    ...(q.includeDelivery && q.grain === "adset" ? DELIVERY_FIELDS : []),
     ...BASE_METRIC_FIELDS,
     ...q.conversionFields,
     ...q.valueFields,
@@ -146,7 +187,10 @@ export async function getPerformance(q: PerfQuery): Promise<PerfResult> {
   );
 
   return {
-    rows: normalizeRows(res.rows, q),
+    rows: normalizeRows(res.rows, q, {
+      creative: !!q.includeCreative && q.grain === "ad",
+      delivery: !!q.includeDelivery && q.grain === "adset",
+    }),
     meta: { source: res.source, fetchedAt: res.fetchedAt, fromCache: res.fromCache, stale: !!res.stale },
   };
 }
@@ -161,7 +205,11 @@ export const getPerformanceTrend = (q: Omit<PerfQuery, "grain" | "daily">) =>
 
 // ---------------------------------------------------------------------------
 
-export function normalizeRows(raw: WindsorRow[], q: Pick<PerfQuery, "accountIds" | "conversionFields" | "valueFields">): PerfRow[] {
+export function normalizeRows(
+  raw: WindsorRow[],
+  q: Pick<PerfQuery, "accountIds" | "conversionFields" | "valueFields">,
+  extra: { creative?: boolean; delivery?: boolean } = {},
+): PerfRow[] {
   const allowed = new Set(q.accountIds);
   const out: PerfRow[] = [];
   for (const r of raw) {
@@ -195,6 +243,27 @@ export function normalizeRows(raw: WindsorRow[], q: Pick<PerfQuery, "accountIds"
       adName: str(r[F.adName]),
       adStatus: str(r[F.adEffectiveStatus]),
       creativeId: str(r[F.creativeId]),
+      ...(extra.creative
+        ? {
+            creative: {
+              thumbnailUrl: str(r[F.thumbnailUrl]) ?? null,
+              destinationUrl: str(r[F.destinationUrl]) ?? null,
+              title: str(r[F.adTitle]) ?? null,
+              body: str(r[F.adBody]) ?? null,
+              callToAction: str(r[F.callToAction]) ?? null,
+              qualityRanking: str(r[F.qualityRanking]) ?? null,
+              engagementRanking: str(r[F.engagementRanking]) ?? null,
+              conversionRanking: str(r[F.conversionRanking]) ?? null,
+              videoViews3s: optNum(r[F.videoViews3s]),
+              videoP25: optNum(r[F.videoP25]),
+              videoP100: optNum(r[F.videoP100]),
+              thruplays: optNum(r[F.thruplays]),
+            },
+          }
+        : {}),
+      ...(extra.delivery
+        ? { learningStage: str(r[F.adsetLearningStage]) ?? null, optimizationGoal: str(r[F.adsetOptimizationGoal]) ?? null }
+        : {}),
       spend: num(r[F.spend]),
       impressions: num(r[F.impressions]),
       clicks: num(r[F.clicks]),
@@ -242,6 +311,12 @@ function str(v: unknown): string | undefined {
 function num(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+function optNum(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 /** Meta budgets are in minor units (cents); 0 means "not set". */

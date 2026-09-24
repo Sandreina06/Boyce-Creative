@@ -32,7 +32,13 @@ export function SettingsForm(props: {
     attributionWindow: string;
     currency: string;
     timezone: string;
+    industry: string | null;
+    website: string | null;
+    leadMethod: string | null;
+    serviceArea: string | null;
+    contextNotes: string | null;
   };
+  industries: Opt[];
   conversionFields: Opt[];
   valueFields: Opt[];
   kpis: Opt[];
@@ -97,6 +103,43 @@ export function SettingsForm(props: {
       <Field label="Timezone (IANA)">
         <Input name="timezone" defaultValue={s.timezone} disabled={props.disabled} />
       </Field>
+      <div className="border-t border-border pt-4 text-sm font-semibold sm:col-span-2">Business context (used by recommendations)</div>
+      <Field label="Industry (sets benchmarks)">
+        <NativeSelect name="industry" defaultValue={s.industry ?? ""} disabled={props.disabled}>
+          <option value="">Not set</option>
+          {props.industries.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </Field>
+      <Field label="How leads are captured">
+        <NativeSelect name="leadMethod" defaultValue={s.leadMethod ?? ""} disabled={props.disabled}>
+          <option value="">Not set</option>
+          <option value="instant_form">Meta instant forms</option>
+          <option value="website">Website (pixel)</option>
+          <option value="mixed">Both</option>
+          <option value="traffic">Traffic only (no lead tracking)</option>
+          <option value="other">Other</option>
+        </NativeSelect>
+      </Field>
+      <Field label="Website">
+        <Input name="website" defaultValue={s.website ?? ""} placeholder="https://" disabled={props.disabled} />
+      </Field>
+      <Field label="Service area">
+        <Input name="serviceArea" defaultValue={s.serviceArea ?? ""} disabled={props.disabled} />
+      </Field>
+      <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <Label>Context notes (offer, seasonality, what a good lead is, sales process)</Label>
+        <textarea
+          name="contextNotes"
+          defaultValue={s.contextNotes ?? ""}
+          rows={4}
+          disabled={props.disabled}
+          className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+      </div>
       <fieldset className="sm:col-span-2">
         <legend className="text-xs font-medium text-muted-foreground">Secondary KPIs</legend>
         <div className="mt-1.5 flex flex-wrap gap-3">

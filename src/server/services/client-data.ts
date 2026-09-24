@@ -41,14 +41,24 @@ function baseOf(ctx: ClientContext, row: PerfRow): BaseMetrics {
   return toBase(row, ctx.settings.primaryConversionField, ctx.settings.primaryValueField);
 }
 
-export async function fetchGrain(ctx: ClientContext, grain: Grain, range: DateRange, daily = false) {
+export async function fetchGrain(
+  ctx: ClientContext,
+  grain: Grain,
+  range: DateRange,
+  daily = false,
+  extra: { includeCreative?: boolean; includeDelivery?: boolean; extraConversionFields?: string[] } = {},
+) {
+  const conv = conversionFieldsFor(ctx);
   return getPerformance({
     accountIds: ctx.accountIds,
     range,
     grain,
     daily,
     attributionWindow: ctx.settings.attributionWindow,
-    ...conversionFieldsFor(ctx),
+    includeCreative: extra.includeCreative,
+    includeDelivery: extra.includeDelivery,
+    conversionFields: [...new Set([...conv.conversionFields, ...(extra.extraConversionFields ?? [])])],
+    valueFields: conv.valueFields,
   });
 }
 

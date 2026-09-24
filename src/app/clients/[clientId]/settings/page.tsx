@@ -10,6 +10,7 @@ import { requireClientAccess } from "@/server/auth/access";
 import { db, schema } from "@/server/db";
 import { todayIn } from "@/server/analytics/date-ranges";
 import { KPI_OPTIONS } from "@/server/analytics/metrics";
+import { INDUSTRY_OPTIONS } from "@/server/analytics/benchmarks";
 import { ATTRIBUTION_WINDOWS, CONVERSION_FIELDS, VALUE_FIELDS } from "@/server/windsor/fields";
 import { BudgetForm, MappingForm, SettingsForm, TargetForm } from "./forms";
 
@@ -50,6 +51,7 @@ export default async function SettingsPage(props: PageProps<"/clients/[clientId]
             clientId={clientId}
             disabled={!canEdit}
             settings={ctx.settings}
+            industries={opts(INDUSTRY_OPTIONS)}
             conversionFields={opts(CONVERSION_FIELDS)}
             valueFields={opts(VALUE_FIELDS)}
             kpis={opts(KPI_OPTIONS)}

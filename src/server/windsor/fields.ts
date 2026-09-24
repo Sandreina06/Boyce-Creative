@@ -32,6 +32,23 @@ export const F = {
   adEffectiveStatus: "effective_status",
   creativeId: "creative_id",
   thumbnailUrl: "thumbnail_url", // signed, expiring Meta CDN URL — never persist long-term
+  /** Click destination; "http://fb.me/" is Meta's value for instant-form (lead form) ads. */
+  destinationUrl: "website_destination_url",
+  adTitle: "title",
+  adBody: "body",
+  callToAction: "call_to_action_type",
+  // Meta relevance diagnostics: ABOVE_AVERAGE | AVERAGE | BELOW_AVERAGE_* | UNKNOWN
+  qualityRanking: "quality_ranking",
+  engagementRanking: "engagement_rate_ranking",
+  conversionRanking: "conversion_rate_ranking",
+  // Video (null for image ads)
+  videoViews3s: "actions_video_view", // 3-second video views
+  videoP25: "video_p25_watched_actions_video_view",
+  videoP100: "video_p100_watched_actions_video_view",
+  thruplays: "video_thruplay_watched_actions_video_view",
+  // Ad set delivery: LEARNING | FAIL (= "Learning limited") | null (learning complete / inactive)
+  adsetLearningStage: "adset_learning_stage_info",
+  adsetOptimizationGoal: "adsset_optimization_goal", // sic — Windsor's spelling
 
   // Base metrics (additive unless noted)
   spend: "spend", // major currency units

@@ -41,7 +41,7 @@ export class DemoWindsorTransport implements WindsorTransport {
       const row: WindsorRow = { ...dv };
       for (const f of req.fields) {
         if (f in row) continue;
-        row[f] = metricValue(f, m, frequency, fetchedAt);
+        row[f] = metricValue(f, m, frequency, fetchedAt, String(dv[F.adName] ?? "").startsWith("UGC Video"));
       }
       return row;
     });
@@ -183,6 +183,15 @@ const DIMENSION_FIELDS = new Set<string>([
   F.adEffectiveStatus,
   F.creativeId,
   F.thumbnailUrl,
+  F.destinationUrl,
+  F.adTitle,
+  F.adBody,
+  F.callToAction,
+  F.qualityRanking,
+  F.engagementRanking,
+  F.conversionRanking,
+  F.adsetLearningStage,
+  F.adsetOptimizationGoal,
 ]);
 
 function dimValue(field: string, ad: DemoAd, date: string): string | number | null {
@@ -226,12 +235,31 @@ function dimValue(field: string, ad: DemoAd, date: string): string | number | nu
       return ad.creativeId;
     case F.thumbnailUrl:
       return null;
+    case F.destinationUrl:
+      return ad.campaignName.includes("Retargeting") ? "https://example.com/offer" : "http://fb.me/";
+    case F.adTitle:
+      return ad.adName.startsWith("UGC") ? "Demo headline A — free estimate" : "Demo headline B — limited offer";
+    case F.adBody:
+      return ad.adName.startsWith("Static")
+        ? "Demo primary text 2: offer-led copy. Synthetic creative for development only."
+        : "Demo primary text 1: problem-led copy. Synthetic creative for development only.";
+    case F.callToAction:
+      return "LEARN_MORE";
+    case F.qualityRanking:
+    case F.engagementRanking:
+      return "AVERAGE";
+    case F.conversionRanking:
+      return ad.adName.startsWith("Carousel") ? "BELOW_AVERAGE_35" : "AVERAGE";
+    case F.adsetLearningStage:
+      return ad.adsetName.includes("Interests") || ad.adsetName.includes("Home") ? "FAIL" : "LEARNING";
+    case F.adsetOptimizationGoal:
+      return "LEAD_GENERATION";
     default:
       return null;
   }
 }
 
-function metricValue(field: string, m: Metrics, frequency: number, fetchedAt: string): number | string | null {
+function metricValue(field: string, m: Metrics, frequency: number, fetchedAt: string, isVideo = false): number | string | null {
   switch (field) {
     case F.spend:
       return round2(m.spend);
@@ -247,6 +275,12 @@ function metricValue(field: string, m: Metrics, frequency: number, fetchedAt: st
       return Math.round(frequency * 10_000) / 10_000;
     case F.dataFetchedAt:
       return fetchedAt;
+  }
+  // Video metrics only for demo video ads (names starting "UGC Video"); null for static, like Meta.
+  if ([F.videoViews3s, F.videoP25, F.videoP100, F.thruplays].includes(field as never)) {
+    if (!isVideo) return null;
+    const rate = { [F.videoViews3s]: 0.28, [F.videoP25]: 0.2, [F.videoP100]: 0.05, [F.thruplays]: 0.07 }[field]!;
+    return Math.round(m.impressions * rate);
   }
   if (field.startsWith("action_values_") || field.startsWith("conversion_values_")) {
     return m.results ? round2(m.value) : null;

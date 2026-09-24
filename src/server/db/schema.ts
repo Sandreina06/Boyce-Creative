@@ -27,6 +27,8 @@ export const businessType = pgEnum("business_type", [
   "custom",
 ]);
 
+export const leadMethod = pgEnum("lead_method", ["instant_form", "website", "mixed", "traffic", "other"]);
+
 export const kpiDirection = pgEnum("kpi_direction", ["lower_better", "higher_better"]);
 
 export const changelogCategory = pgEnum("changelog_category", [
@@ -193,6 +195,14 @@ export const clientSettings = pgTable("client_settings", {
   attributionWindow: text("attribution_window").notNull().default("default"),
   currency: text("currency").notNull().default("USD"),
   timezone: text("timezone").notNull().default("America/New_York"),
+  // Business context used by recommendations
+  /** Key into the benchmark library (src/server/analytics/benchmarks.ts). */
+  industry: text("industry"),
+  website: text("website"),
+  leadMethod: leadMethod("lead_method"),
+  serviceArea: text("service_area"),
+  /** Free-text context: offer, seasonality, sales process, what a good lead is. */
+  contextNotes: text("context_notes"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

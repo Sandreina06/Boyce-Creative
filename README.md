@@ -19,7 +19,19 @@ Design and discovery notes: [`docs/01-discovery-and-architecture.md`](docs/01-di
 | 2 | Campaign / ad set / ad pages, drilldowns, full pacing page | Next |
 | 3 | Manual changelog, Meta-detected changes, change impact, annotations | |
 | 4 | Deterministic insights, root-cause decomposition, drilldown | |
-| 5 | Creative analysis, breakdowns, saved insights, AI summaries | |
+| 5 | Creative analysis, breakdowns, saved insights, AI summaries | 🟡 Creative analysis, account health, context-aware strategy and benchmarks built; breakdowns, saved insights and AI summaries still to do |
+
+## Intelligence (deterministic, no LLM)
+
+- **Creative** (`/clients/[id]/creative`): each ad is labelled Winner, Scaling candidate,
+  Creative fatigue, Underperformer, Stable or Low data. Fatigue needs an exposure signal
+  (frequency) *and* a performance signal (CTR ↓ or cost per result ↑). The page also ranks primary
+  texts and headlines, shows where clicks go (instant form vs landing pages), and lists hook/hold
+  rates and Meta's relevance rankings.
+- **Insights** (`/clients/[id]/insights`): account health (the drivers of KPI changes, learning
+  limited, single-ad ad sets, concentration, tracking gaps, pacing, saturation) plus strategy that
+  uses the client's context (industry, lead method, service area, notes in Settings) and published
+  benchmarks with sources (`src/server/analytics/benchmarks.ts`).
 
 ## How data flows
 

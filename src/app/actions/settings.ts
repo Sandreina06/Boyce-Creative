@@ -34,6 +34,18 @@ const SettingsSchema = z.object({
   secondaryKpis: z.array(z.enum(kpiIds)).max(6),
   attributionWindow: z.string().refine(isAttributionWindow, "Unknown attribution window"),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  industry: z.string().max(40).transform((v) => v || null),
+  website: z
+    .string()
+    .trim()
+    .max(300)
+    .transform((v) => v || null)
+    .refine((v) => v == null || /^https?:\/\//.test(v), "Website must start with http:// or https://"),
+  leadMethod: z
+    .enum(["", "instant_form", "website", "mixed", "traffic", "other"])
+    .transform((v) => (v === "" ? null : v)),
+  serviceArea: z.string().trim().max(200).transform((v) => v || null),
+  contextNotes: z.string().trim().max(2000).transform((v) => v || null),
   timezone: z.string().refine((tz) => {
     try {
       new Intl.DateTimeFormat("en-US", { timeZone: tz });
@@ -56,6 +68,11 @@ export async function saveClientSettings(_prev: ActionState, fd: FormData): Prom
     attributionWindow: fd.get("attributionWindow"),
     currency: fd.get("currency"),
     timezone: fd.get("timezone"),
+    industry: fd.get("industry") ?? "",
+    website: fd.get("website") ?? "",
+    leadMethod: fd.get("leadMethod") ?? "",
+    serviceArea: fd.get("serviceArea") ?? "",
+    contextNotes: fd.get("contextNotes") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid settings" };
   const { clientId, ...values } = parsed.data;

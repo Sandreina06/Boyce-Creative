@@ -21,6 +21,8 @@ import {
   metricLabel,
 } from "@/server/services/client-data";
 import { mergeMeta } from "@/server/services/data-meta";
+import { getClientIntelligence } from "@/server/services/intelligence";
+import { IssueList } from "@/components/dashboard/issue-list";
 
 export default async function OverviewPage(props: PageProps<"/clients/[clientId]/overview">) {
   const { clientId } = await props.params;
@@ -43,11 +45,12 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
   }
 
   const dates = resolveDatesFromParams(params, ctx.settings.timezone);
-  const [overview, pacing, changes, agency] = await Promise.all([
+  const [overview, pacing, changes, agency, intel] = await Promise.all([
     getClientOverview(ctx, dates),
     getClientPacing(ctx),
     getRecentChanges(ctx.client.id),
     getAgencySettings(),
+    getClientIntelligence(ctx, dates),
   ]);
   const currency = ctx.settings.currency;
   const compareLabel = COMPARE_MODES.find((m) => m.id === dates.compare)?.label.toLowerCase() ?? null;
@@ -63,7 +66,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
     comparisonLabel: compareLabel ?? "previous period",
     formatValue: (k, v) => formatMetric(k, v, currency),
   });
-  const meta = mergeMeta([overview.meta, pacing.meta]);
+  const meta = mergeMeta([overview.meta, pacing.meta, intel.meta]);
 
   return (
     <>
@@ -194,12 +197,15 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Latest insights</CardTitle>
-              <CardDescription>Root-cause insights and drilldowns arrive in Phase 4.</CardDescription>
+              <CardTitle>Top issues &amp; recommendations</CardTitle>
+              <CardDescription>From account data, client context and industry benchmarks</CardDescription>
             </div>
+            <Link prefetch={false} href={`/clients/${clientId}/insights${qs ? `?${qs}` : ""}`} className="text-xs text-primary hover:underline">
+              All {intel.issues.length} →
+            </Link>
           </CardHeader>
-          <CardContent className="pt-2 text-sm text-muted-foreground">
-            The KPI cards above already show the campaign that contributed most to each change.
+          <CardContent className="pt-1">
+            <IssueList issues={intel.issues.filter((i) => i.severity !== "info").slice(0, 4)} compact />
           </CardContent>
         </Card>
         <Card>
