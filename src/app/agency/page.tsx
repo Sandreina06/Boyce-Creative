@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { AppHeader } from "@/components/shell/app-header";
 import { DataStatus } from "@/components/shell/data-status";
-import { AttentionList } from "@/components/dashboard/attention-list";
+import { AttentionPanel } from "@/components/dashboard/attention-panel";
 import { Delta } from "@/components/dashboard/delta";
 import { PACING_VARIANT } from "@/components/dashboard/pacing-card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,6 @@ export default async function AgencyPage(props: PageProps<"/agency">) {
   ).toString();
   const href = (id: string) => `/clients/${id}/overview${qs ? `?${qs}` : ""}`;
   const insightsHref = (id: string) => `/clients/${id}/insights${qs ? `?${qs}` : ""}`;
-  const hidden = overview.rows.reduce((n, r) => n + Math.max(0, r.alerts.length - 4), 0);
   const lastClient = (await cookies()).get(LAST_CLIENT_COOKIE)?.value;
   const lastClientRow = overview.rows.find((r) => r.clientId === lastClient);
 
@@ -70,28 +69,16 @@ export default async function AgencyPage(props: PageProps<"/agency">) {
                 landing pages, tracking gaps and budget pacing. Click an item for the full evidence.
               </CardDescription>
             </div>
-            <div className="flex gap-1.5">
-              {(["critical", "warning", "opportunity"] as const).map((sev) => {
-                const n = overview.attention.filter((a) => a.alert.severity === sev).length;
-                return n ? (
-                  <Badge key={sev} variant={sev === "critical" ? "critical" : sev === "warning" ? "warning" : "good"}>
-                    {n} {sev === "opportunity" ? (n > 1 ? "opportunities" : "opportunity") : sev}
-                  </Badge>
-                ) : null;
-              })}
-              {!overview.attention.length && <Badge>0 alerts</Badge>}
-            </div>
           </CardHeader>
           <CardContent className="pt-2">
-            <AttentionList
-              items={overview.attention.map((a, i) => ({ key: `${a.clientId}-${i}`, ...a }))}
-              hrefFor={insightsHref}
+            <AttentionPanel
+              items={overview.attention.map((a, i) => ({
+                key: `${a.clientId}-${a.alert.ruleId}-${i}`,
+                clientName: a.clientName,
+                href: insightsHref(a.clientId),
+                alert: a.alert,
+              }))}
             />
-            {hidden > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Showing the top 4 per client ({hidden} more). Open a client&apos;s Insights page for the full list.
-              </p>
-            )}
           </CardContent>
         </Card>
 

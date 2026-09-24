@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AttentionList } from "@/components/dashboard/attention-list";
+import { AttentionPanel } from "@/components/dashboard/attention-panel";
 import { Delta } from "@/components/dashboard/delta";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PacingCard } from "@/components/dashboard/pacing-card";
@@ -197,7 +197,7 @@ export default async function OverviewPage(props: PageProps<"/clients/[clientId]
               </div>
             </CardHeader>
             <CardContent className="pt-2">
-              <AttentionList items={alerts.map((a, i) => ({ key: String(i), alert: a }))} />
+              <AttentionPanel items={alerts.map((a, i) => ({ key: `${a.ruleId}-${i}`, alert: a }))} pageSize={3} />
             </CardContent>
           </Card>
           {pacing ? (

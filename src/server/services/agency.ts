@@ -110,10 +110,8 @@ export async function getAgencyOverview(
     }),
   );
 
-  // Top issues per client (already sorted by severity); the full list is on each client's Insights page.
-  const PER_CLIENT = 4;
   const attention = rows
-    .flatMap((r) => r.alerts.slice(0, PER_CLIENT).map((alert) => ({ clientId: r.clientId, clientName: r.name, alert })))
+    .flatMap((r) => r.alerts.map((alert) => ({ clientId: r.clientId, clientName: r.name, alert })))
     .sort((a, b) => sevRank(a.alert.severity) - sevRank(b.alert.severity));
 
   return { rows, attention, meta: mergeMeta(rows.flatMap((r) => (r.meta ? [r.meta] : []))) };
