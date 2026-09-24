@@ -4,10 +4,7 @@
     "buildCommand": "npm run build"
   },
   "deploy": {
-    "preDeployCommand": [
-      "npm run db:setup"
-    ],
-    "startCommand": "npm start",
+    "startCommand": "npm run start:prod",
     "healthcheckPath": "/login",
     "restartPolicyType": "ON_FAILURE"
   }

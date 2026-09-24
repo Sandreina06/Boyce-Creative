@@ -78,7 +78,9 @@ async function main() {
   }
 
   const { ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD } = process.env;
-  if (ADMIN_EMAIL && ADMIN_PASSWORD) {
+  if (ADMIN_EMAIL && ADMIN_PASSWORD && ADMIN_PASSWORD.length < 10) {
+    console.warn("! ADMIN_PASSWORD must be at least 10 characters — admin user NOT created. Update the variable and redeploy.");
+  } else if (ADMIN_EMAIL && ADMIN_PASSWORD) {
     const email = ADMIN_EMAIL.trim().toLowerCase();
     const [existing] = await d.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
     if (!existing) {

@@ -13,7 +13,8 @@
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "tsx scripts/seed.ts",
     "user:create": "tsx scripts/create-user.ts",
-    "db:setup": "node scripts/migrate.mjs && tsx scripts/seed.ts"
+    "db:setup": "node scripts/migrate.mjs && tsx scripts/seed.ts",
+    "start:prod": "sh scripts/start.sh"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
