@@ -135,7 +135,7 @@ and read:
     are set up as subscription products.
 
 The full decision table is in
-`.claude/skills/meta-advertiser/references/pixel-troubleshooting.md`.
+`../pixel-troubleshooting.md`.
 
 **Done when:** a fresh incognito Test Events run shows PageView → ViewContent → AddToCart →
 InitiateCheckout → Purchase, with no `Subscribe`.

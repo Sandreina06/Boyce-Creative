@@ -40,24 +40,33 @@ Boyce Meta Intelligence app, which stays read-only (see `AGENTS.md`). Do not add
 
 | Need | Tool | Notes |
 |---|---|---|
-| Read performance data, campaign structure, change history | Windsor `get_data` | **Read only.** Never call Windsor `execute_action` or `upload_files`. |
-| Create or change anything (campaigns, ad sets, ads, budgets, status, pixel/dataset settings) | Claude in Chrome browser extension, in the person's signed-in Ads Manager and Events Manager | Load the `chrome-browser` skill first. Work in a new tab. Every object is published PAUSED. |
-| Landing pages, Events Manager, Test Events, Pixel Helper | Claude in Chrome | Use the same tab group. Read the network requests (`facebook.com/tr`) and console. |
+| Performance data, campaign structure, change history | Windsor connector (`get_data`) | **Read only.** Never call Windsor `execute_action` or `upload_files`. |
+| Everything else: websites, Events Manager, Ads Manager, creating or changing anything | The browser (Claude in Chrome) | Work in the person's signed-in Chrome. Every object is published PAUSED. |
 
-Use only these two: Windsor for data, Claude in Chrome for everything else. Don't use GoMarble or any other Meta tool.
+Use only these two. Don't use GoMarble or any other Meta tool.
 
-For the Events Manager / pixel task, use Chrome to:
-- open the client's site and check the pixel is installed (page source, `fbq`, Meta Pixel Helper);
-- watch the events each page sends (`facebook.com/tr` requests in the network log);
-- read Test Events in Events Manager.
+This skill runs in two places:
+- **The Claude in Chrome side panel.** You are already in the browser: navigate, read pages,
+  click and type in the person's Chrome directly.
+- **Claude Code with Chrome connected.** Use the `mcp__claude-in-chrome__*` tools.
 
-The browser extension only works in a session running on the person's computer: Claude Code
-started with Chrome enabled, or the Claude desktop app. A cloud session has no browser. If the
-extension's tools (`mcp__claude-in-chrome__*`) aren't available, say so. Then do the work that
-doesn't need them: the spec, the checks, and the client update. Don't make changes another way.
+If neither browser is available, say so in one line and ask the person to open the Claude in
+Chrome side panel. Don't make changes another way.
+
+For the Events Manager / pixel task, use the browser to:
+- open each landing page and check the pixel is installed: page source (`fbq('init'`,
+  `connect.facebook.net/.../fbevents.js`), pixel id, and the Meta Pixel Helper if installed;
+- add a product to the cart and record every `facebook.com/tr` request (`ev=` event name,
+  `id=` pixel id), plus anything else that fires (GTM, Squarespace scripts);
+- read Test Events and the dataset settings in Events Manager.
 
 If a tool or account isn't reachable, say which one and why. Don't guess at what's in the
 account.
+
+## Client plans
+
+Active client plans live in `references/clients/`. When the person names a client, read that
+client's plan first and continue from its status. Current plans: `lane-angus-2026-10.md`.
 
 ## Workflow
 
@@ -114,7 +123,7 @@ Propose the audience plan and get it confirmed, then build it **before** any ad 
 
 ### 5. Spec and confirmation
 
-Write the spec to `docs/clients/<client>/<launch-name>.md` using
+Write the spec (in the repo at `docs/clients/<client>/<launch-name>.md` when you have one, otherwise in the conversation) using
 [`references/campaign-spec-template.md`](references/campaign-spec-template.md). Map the
 client's copy into Meta's fields (Primary text, Headline, Description, CTA button). Meta's CTA
 button is a fixed list, so a custom CTA like "BUILD MY 6-PACK" stays on the creative and the
