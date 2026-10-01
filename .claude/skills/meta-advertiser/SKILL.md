@@ -44,6 +44,13 @@ Boyce Meta Intelligence app, which stays read-only (see `AGENTS.md`). Do not add
 | Create or change anything (campaigns, ad sets, ads, budgets, status, pixel/dataset settings) | Claude in Chrome browser extension, in the person's signed-in Ads Manager and Events Manager | Load the `chrome-browser` skill first. Work in a new tab. Every object is published PAUSED. |
 | Landing pages, Events Manager, Test Events, Pixel Helper | Claude in Chrome | Use the same tab group. Read the network requests (`facebook.com/tr`) and console. |
 
+Use only these two: Windsor for data, Claude in Chrome for everything else. Don't use GoMarble or any other Meta tool.
+
+For the Events Manager / pixel task, use Chrome to:
+- open the client's site and check the pixel is installed (page source, `fbq`, Meta Pixel Helper);
+- watch the events each page sends (`facebook.com/tr` requests in the network log);
+- read Test Events in Events Manager.
+
 The browser extension only works in a session running on the person's computer: Claude Code
 started with Chrome enabled, or the Claude desktop app. A cloud session has no browser. If the
 extension's tools (`mcp__claude-in-chrome__*`) aren't available, say so. Then do the work that
