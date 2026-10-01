@@ -36,13 +36,17 @@ Boyce Meta Intelligence app, which stays read-only (see `AGENTS.md`). Do not add
 
 | Need | Tool | Notes |
 |---|---|---|
-| Read account, campaigns, pixels | GoMarble `facebook_*` read tools, or Windsor `get_data` | Check the account is connected first (`facebook_list_ad_accounts` / Windsor `get_connectors`). |
-| Create or change objects | GoMarble `facebook_propose_*` (the change waits for approval), then Windsor `execute_action` on `facebook` (`create_campaign`, `create_adset`, `create_ad_image`, `update_*`) | Read `list_actions` for the schema first. Always pass status `PAUSED`. |
-| Landing pages, Events Manager, Test Events | Browser (Claude in Chrome / built-in browser) | Load the matching browser skill first. Events Manager and Test Events are only available in the browser. |
+| Read performance data, campaign structure, change history | Windsor `get_data` | **Read only.** Never call Windsor `execute_action` or `upload_files`. |
+| Create or change anything (campaigns, ad sets, ads, budgets, status, pixel/dataset settings) | Claude in Chrome browser extension, in the person's signed-in Ads Manager and Events Manager | Load the `chrome-browser` skill first. Work in a new tab. Every object is published PAUSED. |
+| Landing pages, Events Manager, Test Events, Pixel Helper | Claude in Chrome | Use the same tab group. Read the network requests (`facebook.com/tr`) and console. |
 
-If a tool or account isn't reachable (MCP server down, account not connected in Windsor,
-domain blocked by the network policy), say which one and why. Then do the work that doesn't
-need it: the spec, the checks, and the client update. Don't guess at what's in the account.
+The browser extension only works in a session running on the person's computer: Claude Code
+started with Chrome enabled, or the Claude desktop app. A cloud session has no browser. If the
+extension's tools (`mcp__claude-in-chrome__*`) aren't available, say so. Then do the work that
+doesn't need them: the spec, the checks, and the client update. Don't make changes another way.
+
+If a tool or account isn't reachable, say which one and why. Don't guess at what's in the
+account.
 
 ## Workflow
 
